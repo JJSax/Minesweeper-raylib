@@ -10,8 +10,6 @@ void unload();
 
 class Cell {
 protected:
-	const int x;
-	const int y;
 	bool hidden;
 	short int adjacentMines;
 	Grid& grid;
@@ -21,10 +19,10 @@ public:
 	~Cell();
 	bool operator==(const Cell& other);
 
+	const int x;
+	const int y;
 	bool mine;
 	int spriteVal;
-	int getX();
-	int getY();
 	void render(float tileSize);
 	bool isMine();
 };
@@ -48,7 +46,6 @@ public:
 
 	bool hasCellAtPixel(Vector2 pos);
 	Cell& cellAtPixel(Vector2 pos);
-	// Rectangle rectAt(Vector2 pos);
 	Cell& randomCell();
 
 	void placeMines();

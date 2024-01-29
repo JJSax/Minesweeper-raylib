@@ -33,9 +33,6 @@ int randInt(int lower, int upper) {
 int randInt(int upper) {return randInt(0, upper);}
 
 Texture2D spriteTex;
-
-// Rectangle spriteMap[13]; // would have loved to use unordered map with enum class keys...
-// std::unordered_map<Quad, int> spriteLabel;
 std::unordered_map<Quad, Rectangle> spriteMap;
 
 Rectangle rectForSprite(int quad) {
@@ -44,21 +41,10 @@ Rectangle rectForSprite(int quad) {
 }
 
 void load() {
-
 	for (int q = ZERO; q < QUAD_END; q++) {
 		spriteMap.emplace(static_cast<Quad>(q), rectForSprite(q));
 	}
-
-	// float sts = 20; // sprite tile size
-	// for (int i = 0; i <= 8; i++) {
-	// 	spriteMap[i] = {sts * i, sts, sts, sts};
-	// }
-	// for (int i = 9; i <= 13; i++) {
-	// 	spriteMap[i] = {sts * (i - 9), 0, sts, sts};
-	// }
-
 	spriteTex = LoadTexture("assets/sprite.png");
-
 }
 
 void unload() {
@@ -73,13 +59,10 @@ Cell::~Cell() {}
 
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
-	// std::cout << spriteVal << std::endl;
 	if (hidden) {
 		DrawTexturePro(spriteTex, spriteMap.at(static_cast<Quad>(spriteVal)), l, {0, 0}, 0, WHITE);
 	}
 }
-int Cell::getX() {return x;}
-int Cell::getY() {return y;}
 bool Cell::isMine() {return mine;}
 
 bool Cell::operator==(const Cell& other) {
@@ -144,10 +127,6 @@ bool Grid::hasCellAtPixel(Vector2 pos) {
 Cell& Grid::cellAtPixel(Vector2 pos) {
 	return tiles.at(pos.x / tileSize).at(pos.y / tileSize);
 }
-
-// Rectangle Grid::rectAt(Vector2 pos) {
-
-// }
 
 Cell& Grid::randomCell() {
 	int w = randInt(gWidth - 1);
