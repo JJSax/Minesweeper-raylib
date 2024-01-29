@@ -50,6 +50,6 @@ public:
 	Cell& cellAtPixel(Vector2 pos);
 	Cell& randomCell();
 
-	void placeMines();
+	void placeMines(Cell& clicked);
 
 };

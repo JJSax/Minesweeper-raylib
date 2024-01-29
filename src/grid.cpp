@@ -1,5 +1,6 @@
 #include "grid.hpp"
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <iostream>
 #include <random>
@@ -87,17 +88,18 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 			tiles[x].emplace_back(x, y);
 		}
 	}
-	this->placeMines();
+	// this->placeMines();
 }
 Grid::~Grid() {}
 
-void Grid::placeMines() {
+void Grid::placeMines(Cell& clicked) {
 	for (int i = 0; i < totalMines; i++) {
 		while (true) {
 			Cell& rc = randomCell();
 			if (rc.isMine()) continue;
+			if (std::abs(clicked.x - rc.x) <= 1 && std::abs(clicked.y - rc.y) <= 1) continue;
 
-			// Only here when it can place the mine
+			// The code only gets here when it can place the mine
 			rc.spriteVal = MINE;
 			rc.mine = true;
 
@@ -106,6 +108,7 @@ void Grid::placeMines() {
 				for (int y = rc.y - 1; y <= rc.y + 1; y++) {
 					if (x == rc.x && y == rc.y) continue;
 					if (!isValid(x, y)) continue;
+
 					Cell& adjacent = getCell(x, y);
 					if (adjacent.spriteVal < EIGHT) {
 						adjacent.spriteVal++;

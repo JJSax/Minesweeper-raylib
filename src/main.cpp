@@ -18,6 +18,11 @@ int main() {
 	SetTargetFPS(60);
 	while (!WindowShouldClose()) {
 		//update
+
+		if (IsMouseButtonPressed(0) && field.hasCellAtPixel(GetMousePosition())) {
+			field.placeMines(field.cellAtPixel(GetMousePosition()));
+		}
+
 		//draw
 		BeginDrawing();
 		ClearBackground(BLACK);
