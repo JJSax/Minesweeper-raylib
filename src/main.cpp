@@ -9,10 +9,11 @@ int main() {
 	const int gWidth = 18;
 	const int gHeight = 14;
 	const int footHeight = 50;
+	const int totalMines = 40;
 
 	InitWindow(gWidth * tileSize, gHeight * tileSize + footHeight, "Minesweeper");
 
-	Grid field(gWidth, gHeight, tileSize);
+	Grid field(gWidth, gHeight, tileSize, totalMines);
 	load();
 	SetTargetFPS(60);
 	while (!WindowShouldClose()) {
