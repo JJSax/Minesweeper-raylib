@@ -1,6 +1,6 @@
 #include <raylib.h>
 
-#include "minesweeper.hpp"
+#include "grid.hpp"
 
 int main() {
 
@@ -12,8 +12,8 @@ int main() {
 
 	InitWindow(gWidth * tileSize, gHeight * tileSize + footHeight, "Minesweeper");
 
-	MS::Minefield field(gWidth, gHeight, tileSize);
-	MS::load();
+	Grid field(gWidth, gHeight, tileSize);
+	load();
 	SetTargetFPS(60);
 	while (!WindowShouldClose()) {
 		//update
@@ -27,7 +27,7 @@ int main() {
 	}
 	CloseWindow();
 
-	MS::unload();
+	unload();
 
 	return 0;
 }
