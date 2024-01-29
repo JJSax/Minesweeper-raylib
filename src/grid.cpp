@@ -51,15 +51,17 @@ void unload() {
 	UnloadTexture(spriteTex);
 }
 
-Cell::Cell(int x, int y) : grid(grid), x(x), y(y) {
-	this->hidden = true;
-	this->spriteVal = 9;
+Cell::Cell(int x, int y) : grid(grid), x(x), y(y), mine(false) {
+	this->hidden = false;
+	this->spriteVal = 0;
 }
 Cell::~Cell() {}
 
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
 	if (hidden) {
+		DrawTexturePro(spriteTex, spriteMap.at(HIDDEN), l, {0, 0}, 0, WHITE);
+	} else {
 		DrawTexturePro(spriteTex, spriteMap.at(static_cast<Quad>(spriteVal)), l, {0, 0}, 0, WHITE);
 	}
 }
@@ -93,13 +95,31 @@ void Grid::placeMines() {
 	for (int i = 0; i < totalMines; i++) {
 		while (true) {
 			Cell& rc = randomCell();
-			if (!rc.isMine()) {
-				rc.spriteVal = MINE;
-				rc.mine = true;
-				break;
+			if (rc.isMine()) continue;
+
+			// Only here when it can place the mine
+			rc.spriteVal = MINE;
+			rc.mine = true;
+
+			// set adjacent numbers
+			for (int x = rc.x - 1; x <= rc.x + 1; x++) {
+				for (int y = rc.y - 1; y <= rc.y + 1; y++) {
+					if (x == rc.x && y == rc.y) continue;
+					if (!isValid(x, y)) continue;
+					Cell& adjacent = getCell(x, y);
+					if (adjacent.spriteVal < EIGHT) {
+						adjacent.spriteVal++;
+					}
+				}
 			}
+
+			break;
 		}
 	}
+}
+
+bool Grid::isValid(int x, int y) {
+	return 0 <= x && x < tiles.size() && 0 <= y && y < tiles[x].size();
 }
 
 Cell& Grid::getCell(int x, int y) {

@@ -41,6 +41,8 @@ public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
 
+
+	bool isValid(int x, int y);
 	Cell& getCell(int x, int y);
 	void render();
 
