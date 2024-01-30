@@ -57,25 +57,29 @@ void unload() {
 Cell::Cell(int x, int y) : grid(grid), x(x), y(y), mine(false) {
 	hidden = true;
 	spriteVal = 0;
+	flagged = false;
 }
 Cell::~Cell() {}
 
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
-	if (hidden) {
-		DrawTexturePro(spriteTex, spriteMap.at(HIDDEN), l, {0, 0}, 0, WHITE);
-		return;
-	}
-	DrawTexturePro(spriteTex, spriteMap.at(static_cast<Quad>(spriteVal)), l, {0, 0}, 0, WHITE);
+	Rectangle quad = spriteMap.at(static_cast<Quad>(spriteVal));
+	if (hidden) quad = spriteMap.at(HIDDEN);
+	if (flagged) quad = spriteMap.at(FLAG);
+	DrawTexturePro(spriteTex, quad, l, {0, 0}, 0, WHITE);
 }
 bool Cell::isMine() {return mine;}
 
 void Cell::dig() {
 	hidden = false;
-	if (mine) {
-		spriteVal = EXPLODE;
-		PlaySound(kaboom);
-	}
+	if (!mine) return;
+	spriteVal = EXPLODE;
+	PlaySound(kaboom);
+}
+
+void Cell::toggleFlagged() {
+	if (!hidden) return;
+	flagged = !flagged;
 }
 
 bool Cell::operator==(const Cell& other) {
@@ -91,7 +95,7 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	this->gHeight = gHeight;
 	this->tileSize = tileSize;
 	this->totalMines = totalMines;
-	this->state = GAMESTATE::PLAYING;
+	this->state = GAMESTATE::INIT;
 
 	for (int x = 0; x < gWidth; x++) {
 		tiles.emplace_back();
@@ -131,6 +135,11 @@ void Grid::placeMines(Cell& clicked) {
 	}
 }
 
+void Grid::createMap(Vector2 pos) {
+	if (state != GAMESTATE::INIT) return;
+
+}
+
 bool Grid::hasFailed() {return state == GAMESTATE::GAMEOVER;}
 
 bool Grid::isValid(int x, int y) {
@@ -139,6 +148,15 @@ bool Grid::isValid(int x, int y) {
 
 Cell& Grid::getCell(int x, int y) {
 	return tiles.at(x).at(y);
+}
+
+void Grid::handleLeftClick(Vector2 pos) {
+	if (!hasCellAtPixel(pos)) return;
+	if (state == GAMESTATE::INIT) {
+		placeMines(cellAtPixel(pos));
+		state = GAMESTATE::PLAYING;
+	}
+	dig(pos);
 }
 
 void Grid::update() {
@@ -150,13 +168,14 @@ void Grid::update() {
 	// reveal first layer of revealQueue.
 	std::vector<std::reference_wrapper<Cell>> nextLayer;
 	for (Cell& cell : revealQueue.front()) {
-		cell.dig();
+		if (!cell.flagged) cell.dig();
 		if (cell.mine) state = GAMESTATE::GAMEOVER;
 		if (cell.spriteVal != ZERO) continue;
 		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 				if (!isValid(x, y)) continue;
 				if (!getCell(x, y).hidden) continue;
+				if (getCell(x, y).flagged) continue;
 				nextLayer.emplace_back(getCell(x, y));
 			}
 		}
@@ -194,6 +213,7 @@ Cell& Grid::randomCell() {
 
 void Grid::dig(Cell& cell) {
 	if (state == GAMESTATE::GAMEOVER || state == GAMESTATE::WIN) return;
+	if (cell.flagged) return;
 
 	cell.dig();
 	if (cell.isMine()) state = GAMESTATE::GAMEOVER;
@@ -203,6 +223,7 @@ void Grid::dig(Cell& cell) {
 			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 				if (!isValid(x, y)) continue;
 				if (!getCell(x, y).hidden) continue;
+				if (getCell(x, y).flagged) continue;
 				neighbors.emplace_back(getCell(x, y));
 			}
 		}
@@ -210,3 +231,10 @@ void Grid::dig(Cell& cell) {
 	}
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
+
+void Grid::flag(Vector2 pos) {
+	if (state != GAMESTATE::PLAYING) return;
+	if (!hasCellAtPixel(pos)) return;
+	Cell& c = cellAtPixel(pos);
+	c.toggleFlagged();
+}

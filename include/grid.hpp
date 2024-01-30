@@ -11,9 +11,10 @@ void load();
 void unload();
 
 enum class GAMESTATE {
+	INIT,
 	PLAYING,
 	GAMEOVER,
-	WIN
+	WIN,
 };
 
 class Cell {
@@ -31,9 +32,11 @@ public:
 	bool hidden;
 	bool mine;
 	int spriteVal;
+	bool flagged;
 	void render(float tileSize);
 	bool isMine();
 	void dig();
+	void toggleFlagged();
 };
 
 class Grid {
@@ -57,6 +60,7 @@ public:
 	bool hasFailed();
 	bool isValid(int x, int y);
 	Cell& getCell(int x, int y);
+	void handleLeftClick(Vector2 pos);
 	void update();
 	void render();
 
@@ -67,7 +71,9 @@ public:
 	void dig(Cell& cell);
 	void dig(Vector2 position);
 
+	void flag(Vector2 position);
 
+	void createMap(Vector2 pos);
 	void placeMines(Cell& clicked);
 
 };

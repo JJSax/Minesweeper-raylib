@@ -20,15 +20,11 @@ int main() {
 	SetTargetFPS(60);
 	while (!WindowShouldClose()) {
 
-		if (IsMouseButtonPressed(0) && field.hasCellAtPixel(GetMousePosition())) {
-			if (!initialized) {
-				field.placeMines(field.cellAtPixel(GetMousePosition()));
-				field.dig(GetMousePosition());
-				initialized = true;
-			} else {
-				field.dig(GetMousePosition());
-			}
-
+		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+			field.handleLeftClick(GetMousePosition());
+		}
+		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+			field.flag(GetMousePosition());
 		}
 
 		//update
