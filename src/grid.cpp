@@ -34,6 +34,7 @@ int randInt(int lower, int upper) {
 int randInt(int upper) {return randInt(0, upper);}
 
 Texture2D spriteTex;
+Sound kaboom;
 std::unordered_map<Quad, Rectangle> spriteMap;
 Rectangle rectForSprite(int quad) {
 	static const float sts = 20; // sprite tile size
@@ -44,9 +45,11 @@ void load() {
 		spriteMap.emplace(static_cast<Quad>(q), rectForSprite(q));
 	}
 	spriteTex = LoadTexture("assets/sprite.png");
+	kaboom = LoadSound("assets/Big_Explosion_Cut_Off.mp3");
 }
 void unload() {
 	UnloadTexture(spriteTex);
+	UnloadSound(kaboom);
 }
 
 
@@ -61,9 +64,9 @@ void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
 	if (hidden) {
 		DrawTexturePro(spriteTex, spriteMap.at(HIDDEN), l, {0, 0}, 0, WHITE);
-	} else {
-		DrawTexturePro(spriteTex, spriteMap.at(static_cast<Quad>(spriteVal)), l, {0, 0}, 0, WHITE);
+		return;
 	}
+	DrawTexturePro(spriteTex, spriteMap.at(static_cast<Quad>(spriteVal)), l, {0, 0}, 0, WHITE);
 }
 bool Cell::isMine() {return mine;}
 
@@ -71,6 +74,7 @@ void Cell::dig() {
 	hidden = false;
 	if (mine) {
 		spriteVal = EXPLODE;
+		PlaySound(kaboom);
 	}
 }
 
@@ -87,6 +91,7 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	this->gHeight = gHeight;
 	this->tileSize = tileSize;
 	this->totalMines = totalMines;
+	this->state = GAMESTATE::PLAYING;
 
 	for (int x = 0; x < gWidth; x++) {
 		tiles.emplace_back();
@@ -126,6 +131,8 @@ void Grid::placeMines(Cell& clicked) {
 	}
 }
 
+bool Grid::hasFailed() {return state == GAMESTATE::GAMEOVER;}
+
 bool Grid::isValid(int x, int y) {
 	return 0 <= x && x < tiles.size() && 0 <= y && y < tiles[x].size();
 }
@@ -144,6 +151,7 @@ void Grid::update() {
 	std::vector<std::reference_wrapper<Cell>> nextLayer;
 	for (Cell& cell : revealQueue.front()) {
 		cell.dig();
+		if (cell.mine) state = GAMESTATE::GAMEOVER;
 		if (cell.spriteVal != ZERO) continue;
 		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
@@ -185,7 +193,10 @@ Cell& Grid::randomCell() {
 }
 
 void Grid::dig(Cell& cell) {
+	if (state == GAMESTATE::GAMEOVER || state == GAMESTATE::WIN) return;
+
 	cell.dig();
+	if (cell.isMine()) state = GAMESTATE::GAMEOVER;
 	if (cell.spriteVal == ZERO) {
 		std::vector<std::reference_wrapper<Cell>> neighbors;
 		for (int x = cell.x - 1; x <= cell.x + 1; x++) {

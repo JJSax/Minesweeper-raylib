@@ -13,6 +13,7 @@ int main() {
 	bool initialized = false; // if map has been created.
 
 	InitWindow(gWidth * tileSize, gHeight * tileSize + footHeight, "Minesweeper");
+	InitAudioDevice();
 
 	Grid field(gWidth, gHeight, tileSize, totalMines);
 	load();
@@ -41,9 +42,10 @@ int main() {
 
 		EndDrawing();
 	}
+	unload();
+	CloseAudioDevice();
 	CloseWindow();
 
-	unload();
 
 	return 0;
 }

@@ -10,6 +10,12 @@ class Grid;
 void load();
 void unload();
 
+enum class GAMESTATE {
+	PLAYING,
+	GAMEOVER,
+	WIN
+};
+
 class Cell {
 protected:
 	short int adjacentMines;
@@ -42,11 +48,13 @@ private:
 	const float REVEALTIMER = 0.05f;
 	float revealTimer = REVEALTIMER;
 	std::queue<std::vector<std::reference_wrapper<Cell>>> revealQueue;
+	GAMESTATE state = GAMESTATE::GAMEOVER;
 public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
 
 
+	bool hasFailed();
 	bool isValid(int x, int y);
 	Cell& getCell(int x, int y);
 	void update();
