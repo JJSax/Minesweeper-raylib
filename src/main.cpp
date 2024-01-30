@@ -10,6 +10,7 @@ int main() {
 	const int gHeight = 14;
 	const int footHeight = 50;
 	const int totalMines = 40;
+	bool initialized = false; // if map has been created.
 
 	InitWindow(gWidth * tileSize, gHeight * tileSize + footHeight, "Minesweeper");
 
@@ -20,7 +21,13 @@ int main() {
 		//update
 
 		if (IsMouseButtonPressed(0) && field.hasCellAtPixel(GetMousePosition())) {
-			field.placeMines(field.cellAtPixel(GetMousePosition()));
+			if (!initialized) {
+				field.placeMines(field.cellAtPixel(GetMousePosition()));
+				initialized = true;
+			} else {
+				field.dig(GetMousePosition());
+			}
+
 		}
 
 		//draw

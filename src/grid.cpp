@@ -35,25 +35,24 @@ int randInt(int upper) {return randInt(0, upper);}
 
 Texture2D spriteTex;
 std::unordered_map<Quad, Rectangle> spriteMap;
-
 Rectangle rectForSprite(int quad) {
 	static const float sts = 20; // sprite tile size
 	return {sts * quad, 0, sts, sts};
 }
-
 void load() {
 	for (int q = ZERO; q < QUAD_END; q++) {
 		spriteMap.emplace(static_cast<Quad>(q), rectForSprite(q));
 	}
 	spriteTex = LoadTexture("assets/sprite.png");
 }
-
 void unload() {
 	UnloadTexture(spriteTex);
 }
 
+
+
 Cell::Cell(int x, int y) : grid(grid), x(x), y(y), mine(false) {
-	this->hidden = false;
+	this->hidden = true;
 	this->spriteVal = 0;
 }
 Cell::~Cell() {}
@@ -88,7 +87,6 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 			tiles[x].emplace_back(x, y);
 		}
 	}
-	// this->placeMines();
 }
 Grid::~Grid() {}
 
@@ -157,3 +155,8 @@ Cell& Grid::randomCell() {
 	// std::cout << w << ": " << h << std::endl;
 	return tiles[w][h];
 }
+
+void Grid::dig(Cell& cell) {
+	cell.hidden = false;
+}
+void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
