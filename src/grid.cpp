@@ -137,26 +137,24 @@ Cell& Grid::getCell(int x, int y) {
 void Grid::update() {
 	if (revealQueue.empty()) return;
 	revealTimer -= GetFrameTime();
-	if (revealTimer <= 0) {
-		std::cout << "revealing" << std::endl;
-		revealTimer = REVEALTIMER;
-		// reveal first layer of revealQueue.
-		std::vector<std::reference_wrapper<Cell>> nextLayer;
-		for (Cell& cell : revealQueue.front()) {
-			cell.dig();
-			if (cell.spriteVal == ZERO) {
-				for (int x = cell.x - 1; x <= cell.x + 1; x++) {
-					for (int y = cell.y - 1; y <= cell.y + 1; y++) {
-						if (!isValid(x, y)) continue;
-						if (!getCell(x, y).hidden) continue;
-						nextLayer.emplace_back(getCell(x, y));
-					}
-				}
+	if (revealTimer > 0) return;
+
+	revealTimer = REVEALTIMER;
+	// reveal first layer of revealQueue.
+	std::vector<std::reference_wrapper<Cell>> nextLayer;
+	for (Cell& cell : revealQueue.front()) {
+		cell.dig();
+		if (cell.spriteVal != ZERO) continue;
+		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
+			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
+				if (!isValid(x, y)) continue;
+				if (!getCell(x, y).hidden) continue;
+				nextLayer.emplace_back(getCell(x, y));
 			}
 		}
-		revealQueue.pop();
-		if (!nextLayer.empty()) revealQueue.push(nextLayer);
 	}
+	revealQueue.pop();
+	if (!nextLayer.empty()) revealQueue.push(nextLayer);
 }
 
 void Grid::render() {
