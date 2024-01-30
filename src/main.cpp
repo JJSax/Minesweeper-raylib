@@ -18,17 +18,20 @@ int main() {
 	load();
 	SetTargetFPS(60);
 	while (!WindowShouldClose()) {
-		//update
 
 		if (IsMouseButtonPressed(0) && field.hasCellAtPixel(GetMousePosition())) {
 			if (!initialized) {
 				field.placeMines(field.cellAtPixel(GetMousePosition()));
+				field.dig(GetMousePosition());
 				initialized = true;
 			} else {
 				field.dig(GetMousePosition());
 			}
 
 		}
+
+		//update
+		field.update();
 
 		//draw
 		BeginDrawing();

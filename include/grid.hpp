@@ -1,8 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 #include <raylib.h>
 #include <random>
+// #include <memory>
 
 class Grid;
 void load();
@@ -25,6 +27,7 @@ public:
 	int spriteVal;
 	void render(float tileSize);
 	bool isMine();
+	void dig();
 };
 
 class Grid {
@@ -36,6 +39,9 @@ protected:
 
 private:
 	int totalMines;
+	const float REVEALTIMER = 0.05f;
+	float revealTimer = REVEALTIMER;
+	std::queue<std::vector<std::reference_wrapper<Cell>>> revealQueue;
 public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
@@ -43,6 +49,7 @@ public:
 
 	bool isValid(int x, int y);
 	Cell& getCell(int x, int y);
+	void update();
 	void render();
 
 	bool hasCellAtPixel(Vector2 pos);

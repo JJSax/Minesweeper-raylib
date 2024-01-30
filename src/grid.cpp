@@ -52,8 +52,8 @@ void unload() {
 
 
 Cell::Cell(int x, int y) : grid(grid), x(x), y(y), mine(false) {
-	this->hidden = true;
-	this->spriteVal = 0;
+	hidden = true;
+	spriteVal = 0;
 }
 Cell::~Cell() {}
 
@@ -66,6 +66,13 @@ void Cell::render(float tileSize) {
 	}
 }
 bool Cell::isMine() {return mine;}
+
+void Cell::dig() {
+	hidden = false;
+	if (mine) {
+		spriteVal = EXPLODE;
+	}
+}
 
 bool Cell::operator==(const Cell& other) {
 	return y == other.y && x == other.x;
@@ -127,10 +134,36 @@ Cell& Grid::getCell(int x, int y) {
 	return tiles.at(x).at(y);
 }
 
+void Grid::update() {
+	if (revealQueue.empty()) return;
+	revealTimer -= GetFrameTime();
+	if (revealTimer <= 0) {
+		std::cout << "revealing" << std::endl;
+		revealTimer = REVEALTIMER;
+		// reveal first layer of revealQueue.
+		std::vector<std::reference_wrapper<Cell>> nextLayer;
+		for (Cell& cell : revealQueue.front()) {
+			cell.dig();
+			if (cell.spriteVal == ZERO) {
+				for (int x = cell.x - 1; x <= cell.x + 1; x++) {
+					for (int y = cell.y - 1; y <= cell.y + 1; y++) {
+						if (!isValid(x, y)) continue;
+						if (!getCell(x, y).hidden) continue;
+						nextLayer.emplace_back(getCell(x, y));
+					}
+				}
+			}
+		}
+		revealQueue.pop();
+		if (!nextLayer.empty()) revealQueue.push(nextLayer);
+	}
+}
+
 void Grid::render() {
 	std::optional<Cell> hovered;
-	if (hasCellAtPixel(GetMousePosition()))
+	if (hasCellAtPixel(GetMousePosition())) {
 		hovered.emplace(cellAtPixel(GetMousePosition()));
+	}
 	for (int x = 0; x < this->gWidth; x++) {
 		for (int y = 0; y < this->gHeight; y++) {
 			tiles[x][y].render(tileSize);
@@ -150,13 +183,21 @@ Cell& Grid::cellAtPixel(Vector2 pos) {
 }
 
 Cell& Grid::randomCell() {
-	int w = randInt(gWidth - 1);
-	int h = randInt(gHeight - 1);
-	// std::cout << w << ": " << h << std::endl;
-	return tiles[w][h];
+	return tiles.at(randInt(gWidth - 1)).at(randInt(gHeight - 1));
 }
 
 void Grid::dig(Cell& cell) {
-	cell.hidden = false;
+	cell.dig();
+	if (cell.spriteVal == ZERO) {
+		std::vector<std::reference_wrapper<Cell>> neighbors;
+		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
+			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
+				if (!isValid(x, y)) continue;
+				if (!getCell(x, y).hidden) continue;
+				neighbors.emplace_back(getCell(x, y));
+			}
+		}
+		revealQueue.push(neighbors);
+	}
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
