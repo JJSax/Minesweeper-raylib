@@ -9,7 +9,7 @@ int main() {
 	const int gWidth = 18;
 	const int gHeight = 14;
 	const int footHeight = 50;
-	const int totalMines = 40;
+	const int totalMines = 4;
 	bool initialized = false; // if map has been created.
 
 	InitWindow(gWidth * tileSize, gHeight * tileSize + footHeight, "Minesweeper");
@@ -21,7 +21,11 @@ int main() {
 	while (!WindowShouldClose()) {
 
 		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-			field.handleLeftClick(GetMousePosition());
+			if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+				field.handleDigAround(GetMousePosition());
+			} else {
+				field.handleLeftClick(GetMousePosition());
+			}
 		}
 		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
 			field.flag(GetMousePosition());

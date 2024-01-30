@@ -4,6 +4,7 @@
 #include <queue>
 #include <raylib.h>
 #include <random>
+#include <set>
 // #include <memory>
 
 class Grid;
@@ -36,7 +37,10 @@ public:
 	void render(float tileSize);
 	bool isMine();
 	void dig();
-	void toggleFlagged();
+
+	/// @brief Toggle the cell's flag
+	/// @return false if not hidden, true if hidden.
+	bool toggleFlagged();
 };
 
 class Grid {
@@ -51,7 +55,10 @@ private:
 	const float REVEALTIMER = 0.05f;
 	float revealTimer = REVEALTIMER;
 	std::queue<std::vector<std::reference_wrapper<Cell>>> revealQueue;
+	// std::vector<std::reference_wrapper<Cell>> flaggedCells;
+	std::set<std::pair<int, int>> flaggedCells;
 	GAMESTATE state = GAMESTATE::GAMEOVER;
+	short int totalFlags;
 public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
@@ -60,6 +67,9 @@ public:
 	bool hasFailed();
 	bool isValid(int x, int y);
 	Cell& getCell(int x, int y);
+	int flagsAround(Cell& cell);
+	void handleDigAround(Cell& cell);
+	void handleDigAround(Vector2 pos);
 	void handleLeftClick(Vector2 pos);
 	void update();
 	void render();
@@ -70,10 +80,10 @@ public:
 
 	void dig(Cell& cell);
 	void dig(Vector2 position);
+	void digAdjacent(Cell& cell);
 
 	void flag(Vector2 position);
 
-	void createMap(Vector2 pos);
 	void placeMines(Cell& clicked);
 
 };

@@ -77,9 +77,10 @@ void Cell::dig() {
 	PlaySound(kaboom);
 }
 
-void Cell::toggleFlagged() {
-	if (!hidden) return;
+bool Cell::toggleFlagged() {
+	if (!hidden) return false;
 	flagged = !flagged;
+	return true;
 }
 
 bool Cell::operator==(const Cell& other) {
@@ -96,6 +97,7 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	this->tileSize = tileSize;
 	this->totalMines = totalMines;
 	this->state = GAMESTATE::INIT;
+	this->totalFlags = 0;
 
 	for (int x = 0; x < gWidth; x++) {
 		tiles.emplace_back();
@@ -135,11 +137,6 @@ void Grid::placeMines(Cell& clicked) {
 	}
 }
 
-void Grid::createMap(Vector2 pos) {
-	if (state != GAMESTATE::INIT) return;
-
-}
-
 bool Grid::hasFailed() {return state == GAMESTATE::GAMEOVER;}
 
 bool Grid::isValid(int x, int y) {
@@ -148,6 +145,34 @@ bool Grid::isValid(int x, int y) {
 
 Cell& Grid::getCell(int x, int y) {
 	return tiles.at(x).at(y);
+}
+
+int Grid::flagsAround(Cell& cell) {
+	int t = 0;
+	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
+		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
+			if (cell.x == x && cell.y == y) continue;
+			if (!isValid(x, y)) continue;
+			if (getCell(x, y).flagged) t++;
+		}
+	}
+	return t;
+}
+
+void Grid::handleDigAround(Cell& cell) {
+	if (cell.hidden || flagsAround(cell) != cell.spriteVal) return;
+	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
+		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
+			if (cell.x == x && cell.y == y) continue;
+			if (!isValid(x, y)) continue;
+			Cell& c = getCell(x, y);
+			if (c.flagged) continue;
+			dig(c);
+		}
+	}
+}
+void Grid::handleDigAround(Vector2 pos) {
+	handleDigAround(cellAtPixel(pos));
 }
 
 void Grid::handleLeftClick(Vector2 pos) {
@@ -217,18 +242,18 @@ void Grid::dig(Cell& cell) {
 
 	cell.dig();
 	if (cell.isMine()) state = GAMESTATE::GAMEOVER;
-	if (cell.spriteVal == ZERO) {
-		std::vector<std::reference_wrapper<Cell>> neighbors;
-		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
-			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
-				if (!isValid(x, y)) continue;
-				if (!getCell(x, y).hidden) continue;
-				if (getCell(x, y).flagged) continue;
-				neighbors.emplace_back(getCell(x, y));
-			}
+	if (cell.spriteVal != ZERO) return;
+
+	std::vector<std::reference_wrapper<Cell>> neighbors;
+	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
+		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
+			if (!isValid(x, y)) continue;
+			if (!getCell(x, y).hidden) continue;
+			if (getCell(x, y).flagged) continue;
+			neighbors.emplace_back(getCell(x, y));
 		}
-		revealQueue.push(neighbors);
 	}
+	revealQueue.push(neighbors);
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
 
@@ -236,5 +261,25 @@ void Grid::flag(Vector2 pos) {
 	if (state != GAMESTATE::PLAYING) return;
 	if (!hasCellAtPixel(pos)) return;
 	Cell& c = cellAtPixel(pos);
-	c.toggleFlagged();
+	if (!c.toggleFlagged()) return;
+
+	if (c.flagged) {
+		flaggedCells.insert(std::make_pair(c.x, c.y));
+		totalFlags++;
+	} else {
+		flaggedCells.erase(std::make_pair(c.x, c.y));
+		totalFlags--;
+	}
+
+	if (totalFlags == totalMines) {
+		// check if all the flags are on mines
+		bool win = true;
+		for (auto c : flaggedCells) {
+			if (!getCell(c.first, c.second).isMine()) {
+				win = false;
+				break;
+			}
+		}
+		if (win) state = GAMESTATE::WIN;
+	}
 }
