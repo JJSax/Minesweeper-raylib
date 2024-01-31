@@ -64,6 +64,11 @@ Cell::~Cell() {}
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
 	Rectangle quad = spriteMap.at(static_cast<Quad>(spriteVal));
+	//!DEBUG
+	if (IsKeyDown(KEY_LEFT_ALT)) {
+		DrawTexturePro(spriteTex, quad, l, {0, 0}, 0, WHITE);
+		return;
+	}
 	if (hidden) quad = spriteMap.at(HIDDEN);
 	if (flagged) quad = spriteMap.at(FLAG);
 	DrawTexturePro(spriteTex, quad, l, {0, 0}, 0, WHITE);
@@ -131,7 +136,6 @@ void Grid::placeMines(Cell& clicked) {
 					}
 				}
 			}
-
 			break;
 		}
 	}
@@ -271,15 +275,18 @@ void Grid::flag(Vector2 pos) {
 		totalFlags--;
 	}
 
-	if (totalFlags == totalMines) {
-		// check if all the flags are on mines
-		bool win = true;
-		for (auto c : flaggedCells) {
-			if (!getCell(c.first, c.second).isMine()) {
-				win = false;
-				break;
-			}
+	if (totalFlags != totalMines) return;
+	// check if all the flags are on mines
+	bool win = true;
+	for (auto c : flaggedCells) {
+		if (!getCell(c.first, c.second).isMine()) {
+			win = false;
+			break;
 		}
-		if (win) state = GAMESTATE::WIN;
 	}
+	if (win) state = GAMESTATE::WIN;
 }
+
+int Grid::getTotalFlags() {return totalFlags;}
+bool Grid::stateWin() {return state == GAMESTATE::WIN;}
+bool Grid::stateLose() {return state == GAMESTATE::GAMEOVER;}

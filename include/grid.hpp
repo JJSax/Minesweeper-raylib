@@ -83,7 +83,10 @@ public:
 	void digAdjacent(Cell& cell);
 
 	void flag(Vector2 position);
-
 	void placeMines(Cell& clicked);
+
+	int getTotalFlags();
+	bool stateWin();
+	bool stateLose();
 
 };
