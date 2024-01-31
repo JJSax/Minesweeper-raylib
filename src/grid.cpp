@@ -98,6 +98,7 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	this->totalMines = totalMines;
 	this->state = GAMESTATE::INIT;
 	this->totalFlags = 0;
+	this->revealedCells = 0;
 
 	for (int x = 0; x < gWidth; x++) {
 		tiles.emplace_back();
@@ -136,8 +137,14 @@ void Grid::placeMines(Cell& clicked) {
 }
 
 bool Grid::rawDig(Cell& cell) {
+	if (!cell.hidden) return true;
 	cell.dig();
-	if (cell.isMine()) state = GAMESTATE::GAMEOVER;
+	if (cell.isMine()) {
+		state = GAMESTATE::GAMEOVER;
+		return false;
+	}
+	revealedCells++;
+	if (revealedCells + totalMines == gWidth * gHeight) state = GAMESTATE::WIN;
 	if (cell.spriteVal != ZERO) return true;
 	return false;
 }
@@ -147,13 +154,13 @@ void Grid::dig(Cell& cell) {
 	if (cell.flagged) return;
 	if (rawDig(cell)) return;
 
-	std::vector<std::reference_wrapper<Cell>> neighbors;
+	std::set<std::pair<int,int>> neighbors;
 	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 			if (!isValid(x, y)) continue;
 			if (!getCell(x, y).hidden) continue;
 			if (getCell(x, y).flagged) continue;
-			neighbors.emplace_back(getCell(x, y));
+			neighbors.emplace(std::pair(x, y));
 		}
 	}
 	revealQueue.push(neighbors);
@@ -166,9 +173,8 @@ bool Grid::isValid(int x, int y) {
 	return 0 <= x && x < tiles.size() && 0 <= y && y < tiles[x].size();
 }
 
-Cell& Grid::getCell(int x, int y) {
-	return tiles.at(x).at(y);
-}
+Cell& Grid::getCell(int x, int y) { return tiles.at(x).at(y); }
+Cell& Grid::getCell(std::pair<int, int> pos) {return getCell(pos.first, pos.second);}
 
 int Grid::flagsAround(Cell& cell) {
 	int t = 0;
@@ -214,15 +220,16 @@ void Grid::update() {
 
 	revealTimer = REVEALTIMER;
 	// reveal first layer of revealQueue.
-	std::vector<std::reference_wrapper<Cell>> nextLayer;
-	for (Cell& cell : revealQueue.front()) {
+	std::set<std::pair<int, int>> nextLayer;
+	for (const auto cPair : revealQueue.front()) {
+		Cell& cell = getCell(cPair);
 		if (!cell.flagged) if (rawDig(cell)) continue;
 		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 				if (!isValid(x, y)) continue;
 				if (!getCell(x, y).hidden) continue;
 				if (getCell(x, y).flagged) continue;
-				nextLayer.emplace_back(getCell(x, y));
+				nextLayer.emplace(std::pair(x, y));
 			}
 		}
 	}
@@ -242,6 +249,11 @@ void Grid::render() {
 				DrawRectangle(x * tileSize, y * tileSize, tileSize, tileSize, Fade(WHITE, 0.1));
 			}
 		}
+	}
+	if (revealQueue.empty()) return;
+	for (const auto cPair : revealQueue.front()) {
+		Cell& c = getCell(cPair);
+		DrawRectangle(c.x * tileSize, c.y * tileSize, tileSize, tileSize, Fade(GREEN, 0.5));
 	}
 }
 

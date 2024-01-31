@@ -10,7 +10,7 @@ int main() {
 	const int gWidth = 18;
 	const int gHeight = 14;
 	const int footHeight = 50;
-	const int totalMines = 40;
+	const int totalMines = 20;
 	bool initialized = false; // if map has been created.
 
 	InitWindow(gWidth * tileSize, gHeight * tileSize + footHeight, "Minesweeper");

@@ -44,25 +44,24 @@ public:
 };
 
 class Grid {
-protected:
+private:
+	std::vector<std::vector<Cell>> tiles;
+	float tileSize;
 	int gHeight;
 	int gWidth;
-	float tileSize;
-	std::vector<std::vector<Cell>> tiles;
-
-private:
 	int totalMines;
 	const float REVEALTIMER = 0.05f;
 	float revealTimer = REVEALTIMER;
-	std::queue<std::vector<std::reference_wrapper<Cell>>> revealQueue;
+	std::queue<std::set<std::pair<int,int>>> revealQueue;
 	std::set<std::pair<int, int>> flaggedCells;
-	std::set<std::pair<int, int>> revealedCells;
+	int revealedCells;
 	GAMESTATE state = GAMESTATE::GAMEOVER;
 	short int totalFlags;
 
 	/// @brief
 	/// @return Bool if the cell was a ZERO cell
 	bool rawDig(Cell& cell);
+protected:
 public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
@@ -73,6 +72,7 @@ public:
 	bool hasFailed();
 	bool isValid(int x, int y);
 	Cell& getCell(int x, int y);
+	Cell& getCell(std::pair<int, int>);
 	int flagsAround(Cell& cell);
 	void handleDigAround(Cell& cell);
 	void handleDigAround(Vector2 pos);
