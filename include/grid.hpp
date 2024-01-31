@@ -55,14 +55,20 @@ private:
 	const float REVEALTIMER = 0.05f;
 	float revealTimer = REVEALTIMER;
 	std::queue<std::vector<std::reference_wrapper<Cell>>> revealQueue;
-	// std::vector<std::reference_wrapper<Cell>> flaggedCells;
 	std::set<std::pair<int, int>> flaggedCells;
+	std::set<std::pair<int, int>> revealedCells;
 	GAMESTATE state = GAMESTATE::GAMEOVER;
 	short int totalFlags;
+
+	/// @brief
+	/// @return Bool if the cell was a ZERO cell
+	bool rawDig(Cell& cell);
 public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
 
+	void dig(Cell& cell);
+	void dig(Vector2 position);
 
 	bool hasFailed();
 	bool isValid(int x, int y);
@@ -77,10 +83,6 @@ public:
 	bool hasCellAtPixel(Vector2 pos);
 	Cell& cellAtPixel(Vector2 pos);
 	Cell& randomCell();
-
-	void dig(Cell& cell);
-	void dig(Vector2 position);
-	void digAdjacent(Cell& cell);
 
 	void flag(Vector2 position);
 	void placeMines(Cell& clicked);
