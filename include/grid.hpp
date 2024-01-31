@@ -54,6 +54,7 @@ private:
 	float revealTimer = REVEALTIMER;
 	std::queue<std::set<std::pair<int,int>>> revealQueue;
 	std::set<std::pair<int, int>> flaggedCells;
+	std::vector<std::pair<int, int>> mines;
 	int revealedCells;
 	GAMESTATE state = GAMESTATE::GAMEOVER;
 	short int totalFlags;
@@ -61,6 +62,12 @@ private:
 	/// @brief
 	/// @return Bool if the cell was a ZERO cell
 	bool rawDig(Cell& cell);
+	void updateClearing();
+
+	const float EXPOSETIMER = 0.1;
+	float exposeTimer;
+	int exposePos;
+	void updateExposingMines();
 protected:
 public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);

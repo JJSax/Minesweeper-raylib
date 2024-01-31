@@ -99,6 +99,8 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	this->state = GAMESTATE::INIT;
 	this->totalFlags = 0;
 	this->revealedCells = 0;
+	this->exposeTimer = 0;
+	this->exposePos = 0;
 
 	for (int x = 0; x < gWidth; x++) {
 		tiles.emplace_back();
@@ -119,6 +121,7 @@ void Grid::placeMines(Cell& clicked) {
 			// The code only gets here when it can place the mine
 			rc.spriteVal = MINE;
 			rc.mine = true;
+			mines.emplace_back(rc.x, rc.y);
 
 			// set adjacent numbers
 			for (int x = rc.x - 1; x <= rc.x + 1; x++) {
@@ -137,6 +140,7 @@ void Grid::placeMines(Cell& clicked) {
 }
 
 bool Grid::rawDig(Cell& cell) {
+	if (state != GAMESTATE::PLAYING) return true;
 	if (!cell.hidden) return true;
 	cell.dig();
 	if (cell.isMine()) {
@@ -213,7 +217,7 @@ void Grid::handleLeftClick(Vector2 pos) {
 	dig(pos);
 }
 
-void Grid::update() {
+void Grid::updateClearing() {
 	if (revealQueue.empty()) return;
 	revealTimer -= GetFrameTime();
 	if (revealTimer > 0) return;
@@ -235,6 +239,28 @@ void Grid::update() {
 	}
 	revealQueue.pop();
 	if (!nextLayer.empty()) revealQueue.push(nextLayer);
+}
+
+void Grid::updateExposingMines() {
+	if (state != GAMESTATE::GAMEOVER) return;
+	if (exposePos == totalMines) return;
+
+	exposeTimer += GetFrameTime();
+	if (exposeTimer >= EXPOSETIMER) {
+		exposeTimer = 0;
+		Cell& cell = getCell(mines.at(exposePos));
+		exposePos++;
+
+		if (cell.flagged) {
+			cell.spriteVal = FLAGMINE;
+			cell.flagged = false;
+		}
+		cell.hidden = false;
+	}
+}
+void Grid::update() {
+	updateClearing();
+	updateExposingMines();
 }
 
 void Grid::render() {
