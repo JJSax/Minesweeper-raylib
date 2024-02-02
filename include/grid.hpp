@@ -5,6 +5,7 @@
 #include <raylib.h>
 #include <random>
 #include <set>
+#include <unordered_set>
 // #include <memory>
 
 class Grid;
@@ -32,6 +33,7 @@ public:
 	const int x;
 	const int y;
 	bool hidden;
+	bool revealed; // if not hidden or is in the revealQueue
 	bool mine;
 	int spriteVal;
 	bool flagged;

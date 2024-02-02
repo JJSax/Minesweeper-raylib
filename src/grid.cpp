@@ -45,6 +45,7 @@ Cell::Cell(int x, int y) : x(x), y(y) {
 	mine = false;
 	exploded = false;
 	adjacentMines = 0;
+	revealed = false;
 }
 Cell::~Cell() {}
 
@@ -56,9 +57,9 @@ void Cell::render(float tileSize) {
 	DrawTexturePro(tileMapTexture, quad, l, {0, 0}, 0, WHITE);
 	DrawRectangleLinesEx(l, 1.0f, Fade(BLACK, 0.2));
 	// if (flagged) quad = spriteMap.at(FLAG);
-	if (mine && !hidden) {
-		DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 6, BLACK);
-	}
+	// if (mine && !hidden || mine) { //! debug OR to test overcounting bug
+	// 	DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 6, BLACK);
+	// }
 	if (flagged) {
 		DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 4, RED);
 	};
@@ -131,41 +132,6 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 			tiles.at(x).at(y).setBorders(*this);
 		}
 	}
-
-
-	// tileMap.emplace(0, 0b0000);
-		// tileMap[0 ] = 0b0000;
-		// tileMap[1 ] = 0b0001;
-		// tileMap[2 ] = 0b1000;
-		// tileMap[3 ] = 0b0100;
-		// tileMap[4 ] = 0b0010;
-		// tileMap[5 ] = 0b0001;
-		// tileMap[6 ] = 0b0101;
-		// tileMap[7 ] = 0b1010;
-		// tileMap[8 ] = 0b1001;
-		// tileMap[9 ] = 0b1100;
-		// tileMap[10] = 0b0011;
-		// tileMap[11] = 0b0110;
-		// tileMap[12] = 0b1101;
-		// tileMap[13] = 0b0111;
-		// tileMap[14] = 0b1011;
-		// tileMap[15] = 0b1110;
-		// tileMap[16] = 0b1111;
-		// 0001
-		// 0010
-		// 0011
-		// 0100
-		// 0101
-		// 0110
-		// 0111
-		// 1000
-		// 1001
-		// 1010
-		// 1011
-		// 1100
-		// 1101
-		// 1110
-		// 1111
 }
 Grid::~Grid() {}
 
@@ -209,7 +175,6 @@ void Grid::placeMines(Cell& clicked) {
 			if (std::abs(clicked.x - rc.x) <= 1 && std::abs(clicked.y - rc.y) <= 1) continue;
 
 			// The code only gets here when it can place the mine
-			// rc.spriteVal = MINE;
 			rc.mine = true;
 			mines.emplace_back(rc.x, rc.y);
 
@@ -228,6 +193,7 @@ void Grid::placeMines(Cell& clicked) {
 }
 
 void Grid::rawDig(Cell& cell) {
+	// if (!cell.hidden) throw std::runtime_error("Can't dig a tile that is already dug");
 	cell.dig();
 	setBordersAround(cell);
 	if (cell.isMine()) {
@@ -245,14 +211,20 @@ void Grid::dig(Cell& cell) {
 	if (cell.flagged) return;
 	if (!cell.hidden) return;
 	rawDig(cell);
+	cell.revealed = true;
 	if (cell.adjacentMines > 0) return;
 
 	std::set<std::pair<int,int>> neighbors;
+
+	//! candidate to move to it's own function,  also used later in update clearing
 	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 			if (!isValid(x, y)) continue;
-			if (!getCell(x, y).hidden) continue;
-			if (getCell(x, y).flagged) continue;
+			Cell& cell = getCell(x, y);
+			if (!cell.hidden) continue;
+			if (cell.flagged) continue;
+			if (cell.revealed) continue;
+			cell.revealed = true;
 			neighbors.emplace(std::pair(x, y));
 		}
 	}
@@ -289,6 +261,7 @@ void Grid::handleDigAround(Cell& cell) {
 			if (!isValid(x, y)) continue;
 			Cell& c = getCell(x, y);
 			if (c.flagged) continue;
+			c.revealed = true;
 			dig(c);
 		}
 	}
@@ -318,13 +291,17 @@ void Grid::updateClearing() {
 		Cell& cell = getCell(cPair);
 		if (!cell.flagged) {
 			rawDig(cell);
+			cell.revealed = true; // might already be true
 			if (cell.adjacentMines > 0) continue;
 		}
 		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 				if (!isValid(x, y)) continue;
-				if (!getCell(x, y).hidden) continue;
-				if (getCell(x, y).flagged) continue;
+				Cell& cell = getCell(x, y);
+				if (!cell.hidden) continue;
+				if (cell.flagged) continue;
+				if (cell.revealed) continue;
+				cell.revealed = true;
 				nextLayer.emplace(std::pair(x, y));
 			}
 		}
