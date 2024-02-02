@@ -15,12 +15,25 @@ enum Wall {
     LEFT = 1 << 3
 };
 
+
 // Texture2D spriteTex;
 Texture2D tileMapTexture;
 Sound kaboom;
 std::unordered_map<int, std::unordered_map<int, Rectangle>> spriteMap;
+std::unordered_map<int, Color> adjacentIndicatorColor;
 
 void load() {
+	adjacentIndicatorColor = {
+		{0, Fade(WHITE, 0)},
+		{1, BLUE},
+		{2, GREEN},
+		{3, YELLOW},
+		{4, ORANGE},
+		{5, PINK},
+		{6, RED},
+		{7, PURPLE},
+		{8, BLACK}
+	};
 	tileMapTexture = LoadTexture("assets/tilemap.png");
 	static const float sts = 60; // sprite tile size
 	for (int i = 0; i <= 1; i++) {
@@ -52,27 +65,25 @@ Cell::~Cell() {}
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
 	Rectangle quad = spriteMap.at(!hidden).at(spriteVal);
-	// if (hidden) quad = spriteMap.at(HIDDEN);
+	if (mine && !hidden) {
+		quad = {120, 240, 60, 60};
+	}
 	if (exploded) quad = quadOverride;
 	DrawTexturePro(tileMapTexture, quad, l, {0, 0}, 0, WHITE);
 	DrawRectangleLinesEx(l, 1.0f, Fade(BLACK, 0.2));
-	// if (flagged) quad = spriteMap.at(FLAG);
-	// if (mine && !hidden || mine) { //! debug OR to test overcounting bug
-	// 	DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 6, BLACK);
-	// }
 	if (flagged) {
 		DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 4, RED);
 	};
 	if (hidden) return;
 	if (adjacentMines > 0 && !mine) {
-		DrawText(TextFormat("%i", adjacentMines),
-			l.x + tileSize / 4, l.y + tileSize / 4,
-			20, PURPLE
+		const char *n = TextFormat("%i", adjacentMines);
+		int font = 26;
+		int w = MeasureText(n, font);
+		DrawText(n,
+			l.x + tileSize / 2 - w/2, l.y + tileSize / 2 - font/2,
+			font, adjacentIndicatorColor.at(adjacentMines)
 		);
 	}
-	// if (hidden) {
-	// 	DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 4, BLACK);
-	// }
 }
 bool Cell::isMine() {return mine;}
 
@@ -91,7 +102,8 @@ void Cell::dig() {
 	hidden = false;
 	if (!mine) return;
 	// spriteVal = EXPLODE;
-	quadOverride = {20, 80, 60, 60};
+	quadOverride = {60, 240, 60, 60};
+	exploded = true;
 	PlaySound(kaboom);
 }
 

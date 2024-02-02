@@ -7,7 +7,7 @@
 int main() {
 
 	// Init
-	const float tileSize = 30;
+	const float tileSize = 40;
 	const int gWidth = 18;
 	const int gHeight = 14;
 	const int footHeight = 50;
