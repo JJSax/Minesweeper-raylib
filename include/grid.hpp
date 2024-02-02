@@ -69,7 +69,11 @@ private:
 	void updateExposingMines();
 protected:
 public:
-	bool rawDig(Cell& cell);
+
+	/// @brief Digs cell if state is playing and the cell is hidden.
+	/// @param cell The cell object to dig.
+	void rawDig(Cell& cell);
+
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
 	void debugDig(Vector2 pos);
