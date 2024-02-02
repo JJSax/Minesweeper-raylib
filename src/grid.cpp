@@ -52,6 +52,7 @@ void Cell::render(float tileSize) {
 	Rectangle quad = spriteMap.at(!hidden).at(spriteVal);
 	// if (hidden) quad = spriteMap.at(HIDDEN);
 	DrawTexturePro(tileMapTexture, quad, l, {0, 0}, 0, WHITE);
+	DrawRectangleLinesEx(l, 1.0f, Fade(BLACK, 0.2));
 	// if (flagged) quad = spriteMap.at(FLAG);
 	if (mine && !hidden) {
 		DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 6, BLACK);
