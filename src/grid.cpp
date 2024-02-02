@@ -43,6 +43,7 @@ Cell::Cell(int x, int y) : x(x), y(y) {
 	spriteVal = 0;
 	flagged = false;
 	mine = false;
+	exploded = false;
 	adjacentMines = 0;
 }
 Cell::~Cell() {}
@@ -51,6 +52,7 @@ void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
 	Rectangle quad = spriteMap.at(!hidden).at(spriteVal);
 	// if (hidden) quad = spriteMap.at(HIDDEN);
+	if (exploded) quad = quadOverride;
 	DrawTexturePro(tileMapTexture, quad, l, {0, 0}, 0, WHITE);
 	DrawRectangleLinesEx(l, 1.0f, Fade(BLACK, 0.2));
 	// if (flagged) quad = spriteMap.at(FLAG);
@@ -88,6 +90,7 @@ void Cell::dig() {
 	hidden = false;
 	if (!mine) return;
 	// spriteVal = EXPLODE;
+	quadOverride = {20, 80, 60, 60};
 	PlaySound(kaboom);
 }
 

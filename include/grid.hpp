@@ -20,8 +20,9 @@ enum class GAMESTATE {
 
 class Cell {
 private:
+	bool exploded;
+	Rectangle quadOverride;
 protected:
-
 public:
 	Cell(int x, int y);
 	~Cell();
