@@ -19,15 +19,15 @@ enum class GAMESTATE {
 };
 
 class Cell {
+private:
 protected:
-	short int adjacentMines;
-	Grid& grid;
 
 public:
 	Cell(int x, int y);
 	~Cell();
 	bool operator==(const Cell& other);
 
+	short int adjacentMines;
 	const int x;
 	const int y;
 	bool hidden;
@@ -39,29 +39,28 @@ public:
 	void dig();
 
 	/// @brief Toggle the cell's flag
-	/// @return false if not hidden, true if hidden.
+	/// @return false if not revealed, true if revealed.
 	bool toggleFlagged();
+	void setBorders(Grid& grid);
 };
 
 class Grid {
 private:
-	std::vector<std::vector<Cell>> tiles;
-	float tileSize;
 	int gHeight;
 	int gWidth;
+	float tileSize;
 	int totalMines;
+	std::vector<std::vector<Cell>> tiles;
+
 	const float REVEALTIMER = 0.05f;
 	float revealTimer = REVEALTIMER;
-	std::queue<std::set<std::pair<int,int>>> revealQueue;
-	std::set<std::pair<int, int>> flaggedCells;
-	std::vector<std::pair<int, int>> mines;
 	int revealedCells;
-	GAMESTATE state = GAMESTATE::GAMEOVER;
 	short int totalFlags;
+	std::set<std::pair<int, int>> flaggedCells;
+	std::queue<std::set<std::pair<int,int>>> revealQueue;
+	std::vector<std::pair<int, int>> mines;
+	GAMESTATE state = GAMESTATE::GAMEOVER;
 
-	/// @brief
-	/// @return Bool if the cell was a ZERO cell
-	bool rawDig(Cell& cell);
 	void updateClearing();
 
 	const float EXPOSETIMER = 0.1;
@@ -70,8 +69,10 @@ private:
 	void updateExposingMines();
 protected:
 public:
+	bool rawDig(Cell& cell);
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
+	void debugDig(Vector2 pos);
 
 	void dig(Cell& cell);
 	void dig(Vector2 position);
@@ -97,5 +98,7 @@ public:
 	int getTotalFlags();
 	bool stateWin();
 	bool stateLose();
+	void setBordersAround(Cell& cell);
+	void debugSetAllBorders();
 
 };

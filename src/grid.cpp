@@ -1,4 +1,6 @@
 #include "grid.hpp"
+#include "randUtils.hpp"
+
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
@@ -24,56 +26,80 @@ enum Quad {
 	QUAD_END
 };
 
-int randInt(int lower, int upper) {
-	static std::random_device rd; // obtain a random number from hardware
-	static std::mt19937 eng(rd()); // seed the generator
-	std::uniform_int_distribution<> distr(lower, upper); // define the range
+enum Wall {
+    TOP = 1 << 0,
+    RIGHT = 1 << 1,
+    BOTTOM = 1 << 2,
+    LEFT = 1 << 3
+};
 
-	return distr(eng);
-}
-int randInt(int upper) {return randInt(0, upper);}
-
-Texture2D spriteTex;
+// Texture2D spriteTex;
+Texture2D tileMapTexture;
 Sound kaboom;
-std::unordered_map<Quad, Rectangle> spriteMap;
-Rectangle rectForSprite(int quad) {
-	static const float sts = 20; // sprite tile size
-	return {sts * quad, 0, sts, sts};
-}
+std::unordered_map<int, std::unordered_map<int, Rectangle>> spriteMap;
+
 void load() {
-	for (int q = ZERO; q < QUAD_END; q++) {
-		spriteMap.emplace(static_cast<Quad>(q), rectForSprite(q));
+	tileMapTexture = LoadTexture("assets/tilemap.png");
+	static const float sts = 60; // sprite tile size
+	for (int i = 0; i <= 1; i++) {
+		spriteMap.emplace(i, std::unordered_map<int, Rectangle>());
+		for (int j = 0; j < 16; j++) {
+			spriteMap.at(i).emplace(j, Rectangle{sts * j, i*sts, sts, sts});
+		}
 	}
-	spriteTex = LoadTexture("assets/sprite.png");
 	kaboom = LoadSound("assets/Big_Explosion_Cut_Off.mp3");
 }
 void unload() {
-	UnloadTexture(spriteTex);
 	UnloadSound(kaboom);
+	UnloadTexture(tileMapTexture);
 }
 
 
 
-Cell::Cell(int x, int y) : grid(grid), x(x), y(y), mine(false) {
+Cell::Cell(int x, int y) : x(x), y(y) {
 	hidden = true;
 	spriteVal = 0;
 	flagged = false;
+	mine = false;
 }
 Cell::~Cell() {}
 
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
-	Rectangle quad = spriteMap.at(static_cast<Quad>(spriteVal));
-	if (hidden) quad = spriteMap.at(HIDDEN);
-	if (flagged) quad = spriteMap.at(FLAG);
-	DrawTexturePro(spriteTex, quad, l, {0, 0}, 0, WHITE);
+	Rectangle quad = spriteMap.at(!hidden).at(spriteVal);
+	// if (hidden) quad = spriteMap.at(HIDDEN);
+	DrawTexturePro(tileMapTexture, quad, l, {0, 0}, 0, WHITE);
+	// if (flagged) quad = spriteMap.at(FLAG);
+	if (flagged) {
+		DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 4, RED);
+	};
+	if (!hidden) {
+		DrawText(TextFormat("%i", adjacentMines),
+			x * tileSize + tileSize / 2, y * tileSize + tileSize / 2,
+			20, BLACK
+		);
+	}
+	// if (hidden) {
+	// 	DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 4, BLACK);
+	// }
 }
 bool Cell::isMine() {return mine;}
+
+bool matchingCellNeighbor(Grid& grid, Cell& cell, int x, int y) {
+	return (grid.isValid(x, y) && grid.getCell(x, y).hidden == cell.hidden);
+}
+void Cell::setBorders(Grid& grid) {
+	spriteVal = 0b0000;
+	if (!matchingCellNeighbor(grid, *this, x, y-1)) spriteVal |= TOP;
+	if (!matchingCellNeighbor(grid, *this, x+1, y)) spriteVal |= RIGHT;
+	if (!matchingCellNeighbor(grid, *this, x, y+1)) spriteVal |= BOTTOM;
+	if (!matchingCellNeighbor(grid, *this, x-1, y)) spriteVal |= LEFT;
+}
 
 void Cell::dig() {
 	hidden = false;
 	if (!mine) return;
-	spriteVal = EXPLODE;
+	// spriteVal = EXPLODE;
 	PlaySound(kaboom);
 }
 
@@ -108,8 +134,81 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 			tiles[x].emplace_back(x, y);
 		}
 	}
+
+	for (int x = 0; x < gWidth; x++) {
+		for (int y = 0; y < gHeight; y++) {
+			tiles.at(x).at(y).setBorders(*this);
+		}
+	}
+
+
+	// tileMap.emplace(0, 0b0000);
+		// tileMap[0 ] = 0b0000;
+		// tileMap[1 ] = 0b0001;
+		// tileMap[2 ] = 0b1000;
+		// tileMap[3 ] = 0b0100;
+		// tileMap[4 ] = 0b0010;
+		// tileMap[5 ] = 0b0001;
+		// tileMap[6 ] = 0b0101;
+		// tileMap[7 ] = 0b1010;
+		// tileMap[8 ] = 0b1001;
+		// tileMap[9 ] = 0b1100;
+		// tileMap[10] = 0b0011;
+		// tileMap[11] = 0b0110;
+		// tileMap[12] = 0b1101;
+		// tileMap[13] = 0b0111;
+		// tileMap[14] = 0b1011;
+		// tileMap[15] = 0b1110;
+		// tileMap[16] = 0b1111;
+		// 0001
+		// 0010
+		// 0011
+		// 0100
+		// 0101
+		// 0110
+		// 0111
+		// 1000
+		// 1001
+		// 1010
+		// 1011
+		// 1100
+		// 1101
+		// 1110
+		// 1111
 }
 Grid::~Grid() {}
+
+void Grid::debugDig(Vector2 pos) {
+	if (!hasCellAtPixel(pos)) return;
+	Cell& cell = cellAtPixel(pos);
+	cell.hidden = false;
+	cell.setBorders(*this);
+	for (int x = cell.x - 1; x <= cell.x + 1; x += 2) {
+		if (!isValid(x, cell.y)) continue;
+		getCell(x, cell.y).setBorders(*this);
+	}
+	for (int y = cell.y - 1; y <= cell.y + 1; y += 2) {
+		if (!isValid(cell.x, y)) continue;
+		getCell(cell.x, y).setBorders(*this);
+	}
+}
+void Grid::debugSetAllBorders() {
+	for (int x = 0; x < gWidth; x++) {
+		for (int y = 0; y < gHeight; y++)
+		{
+			getCell(x, y).setBorders(*this);
+		}
+	}
+}
+
+void Grid::setBordersAround(Cell& cell) {
+	for (int x = cell.x -1; x <= cell.x + 1; x++) {
+		for (int y = cell.y -1; y <= cell.y + 1; y++) {
+			if (!isValid(x, y)) continue;
+			getCell(x, y).setBorders(*this);
+		}
+	}
+}
 
 void Grid::placeMines(Cell& clicked) {
 	for (int i = 0; i < totalMines; i++) {
@@ -119,7 +218,7 @@ void Grid::placeMines(Cell& clicked) {
 			if (std::abs(clicked.x - rc.x) <= 1 && std::abs(clicked.y - rc.y) <= 1) continue;
 
 			// The code only gets here when it can place the mine
-			rc.spriteVal = MINE;
+			// rc.spriteVal = MINE;
 			rc.mine = true;
 			mines.emplace_back(rc.x, rc.y);
 
@@ -129,9 +228,7 @@ void Grid::placeMines(Cell& clicked) {
 					if (x == rc.x && y == rc.y) continue;
 					if (!isValid(x, y)) continue;
 					Cell& adjacent = getCell(x, y);
-					if (adjacent.spriteVal < EIGHT) {
-						adjacent.spriteVal++;
-					}
+					adjacent.adjacentMines++;
 				}
 			}
 			break;
@@ -143,20 +240,21 @@ bool Grid::rawDig(Cell& cell) {
 	if (state != GAMESTATE::PLAYING) return true;
 	if (!cell.hidden) return true;
 	cell.dig();
+	setBordersAround(cell);
 	if (cell.isMine()) {
 		state = GAMESTATE::GAMEOVER;
 		return false;
 	}
 	revealedCells++;
 	if (revealedCells + totalMines == gWidth * gHeight) state = GAMESTATE::WIN;
-	if (cell.spriteVal != ZERO) return true;
+	if (cell.adjacentMines == 0) return true;
 	return false;
 }
 
 void Grid::dig(Cell& cell) {
 	if (state == GAMESTATE::GAMEOVER || state == GAMESTATE::WIN) return;
 	if (cell.flagged) return;
-	if (rawDig(cell)) return;
+	if (rawDig(cell)) return; // if cell was blank/no mine nearby
 
 	std::set<std::pair<int,int>> neighbors;
 	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
@@ -193,7 +291,7 @@ int Grid::flagsAround(Cell& cell) {
 }
 
 void Grid::handleDigAround(Cell& cell) {
-	if (cell.hidden || flagsAround(cell) != cell.spriteVal) return;
+	if (cell.hidden || flagsAround(cell) != cell.adjacentMines) return;
 	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 			if (cell.x == x && cell.y == y) continue;
@@ -227,7 +325,13 @@ void Grid::updateClearing() {
 	std::set<std::pair<int, int>> nextLayer;
 	for (const auto cPair : revealQueue.front()) {
 		Cell& cell = getCell(cPair);
-		if (!cell.flagged) if (rawDig(cell)) continue;
+		setBordersAround(cell);
+		if (!cell.flagged) {
+			if (rawDig(cell)) {
+				continue;
+			}
+			setBordersAround(cell);
+		}
 		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 				if (!isValid(x, y)) continue;
@@ -252,10 +356,11 @@ void Grid::updateExposingMines() {
 		exposePos++;
 
 		if (cell.flagged) {
-			cell.spriteVal = FLAGMINE;
+			// cell.spriteVal = FLAGMINE;
 			cell.flagged = false;
 		}
 		cell.hidden = false;
+		setBordersAround(cell); // correct
 	}
 }
 void Grid::update() {
@@ -277,9 +382,10 @@ void Grid::render() {
 		}
 	}
 	if (revealQueue.empty()) return;
+	std::cout << "HERE" << std::endl;
 	for (const auto cPair : revealQueue.front()) {
 		Cell& c = getCell(cPair);
-		DrawRectangle(c.x * tileSize, c.y * tileSize, tileSize, tileSize, Fade(GREEN, 0.5));
+		DrawRectangle(c.x * tileSize, c.y * tileSize, tileSize, tileSize, Fade(RED, 0.5));
 	}
 }
 
