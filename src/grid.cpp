@@ -65,7 +65,7 @@ void unload() {
 
 ////////////////////////////////////////////////////////////
 
-Cell::Cell(int x, int y) : x(x), y(y) {
+void Cell::reset() {
 	hidden = true;
 	spriteVal = 0;
 	flagged = false;
@@ -73,7 +73,11 @@ Cell::Cell(int x, int y) : x(x), y(y) {
 	exploded = false;
 	adjacentMines = 0;
 	revealed = false;
+};
+
+Cell::Cell(int x, int y) : x(x), y(y) {
 	variant = randInt(15);
+	reset();
 }
 Cell::~Cell() {}
 
@@ -133,7 +137,6 @@ bool Cell::operator==(const Cell& other) {
 
 
 
-
 Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	this->gWidth = gWidth;
 	this->gHeight = gHeight;
@@ -159,6 +162,27 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	}
 }
 Grid::~Grid() {}
+void Grid::reset() {
+	for (int x = 0; x < gWidth; x++) {
+		for (int y = 0; y < gHeight; y++) {
+			getCell(x, y).reset();
+		}
+	}
+	for (int x = 0; x < gWidth; x++) {
+		for (int y = 0; y < gHeight; y++) {
+			tiles.at(x).at(y).setBorders(*this);
+		}
+	}
+
+	state = GAMESTATE::INIT;
+	totalFlags = 0;
+	flaggedCells = {};
+	revealedCells = {};
+	revealQueue = {};
+	mines = {};
+	exposePos = 0;
+
+}
 
 void Grid::setBordersAround(Cell& cell) {
 	for (int x = cell.x -1; x <= cell.x + 1; x++) {
@@ -233,8 +257,6 @@ void Grid::dig(Cell& cell) {
 	revealQueue.push(getNextRevealLayer(cell));
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
-
-bool Grid::hasFailed() {return state == GAMESTATE::GAMEOVER;}
 
 bool Grid::isValid(int x, int y) {
 	return 0 <= x && x < tiles.size() && 0 <= y && y < tiles[x].size();

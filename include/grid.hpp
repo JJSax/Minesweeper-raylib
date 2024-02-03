@@ -28,6 +28,7 @@ protected:
 public:
 	Cell(int x, int y);
 	~Cell();
+	void reset();
 	bool operator==(const Cell& other);
 
 	short int adjacentMines;
@@ -65,10 +66,10 @@ private:
 	std::vector<std::pair<int, int>> mines;
 	GAMESTATE state = GAMESTATE::GAMEOVER;
 
-	std::set<std::pair<int,int>> getNextRevealLayer(Cell& cell);
 	const float EXPOSETIMER = 0.1;
 	float exposeTimer;
 	int exposePos;
+	std::set<std::pair<int,int>> getNextRevealLayer(Cell& cell);
 	void updateExposingMines();
 	void updateClearing();
 
@@ -81,15 +82,15 @@ public:
 
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
+	void reset();
 	// void debugDig(Vector2 pos);
 
 	void dig(Cell& cell);
 	void dig(Vector2 position);
 
-	bool hasFailed();
-	bool isValid(int x, int y);
 	Cell& getCell(int x, int y);
 	Cell& getCell(std::pair<int, int>);
+	bool isValid(int x, int y);
 	int flagsAround(Cell& cell);
 	void handleDigAround(Cell& cell);
 	void handleDigAround(Vector2 pos);
