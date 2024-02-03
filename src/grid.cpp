@@ -15,12 +15,19 @@ enum Wall {
     LEFT = 1 << 3
 };
 
+enum SpecialQuad {
+	FLAG,
+	EXPLODE,
+	MINE
+};
+
 
 // Texture2D spriteTex;
 Texture2D tileMapTexture;
 Sound kaboom;
 std::unordered_map<int, std::unordered_map<int, Rectangle>> spriteMap;
 std::unordered_map<int, Color> adjacentIndicatorColor;
+std::unordered_map<SpecialQuad, Rectangle> specialSpriteMap;
 
 void load() {
 	adjacentIndicatorColor = {
@@ -42,6 +49,10 @@ void load() {
 			spriteMap.at(i).emplace(j, Rectangle{sts * j, i*sts, sts, sts});
 		}
 	}
+	specialSpriteMap.emplace(FLAG, Rectangle{0, 420, sts, sts});
+	specialSpriteMap.emplace(EXPLODE, Rectangle{60, 300, sts, sts});
+	specialSpriteMap.emplace(MINE, Rectangle{120, 300, sts, sts});
+
 	kaboom = LoadSound("assets/Big_Explosion_Cut_Off.mp3");
 }
 void unload() {
@@ -62,18 +73,18 @@ Cell::Cell(int x, int y) : x(x), y(y) {
 }
 Cell::~Cell() {}
 
+void drawQuad(Rectangle quad, Rectangle at) {
+	DrawTexturePro(tileMapTexture, quad, at, {0, 0}, 0, WHITE);
+}
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
 	Rectangle quad = spriteMap.at(!hidden).at(spriteVal);
-	if (mine && !hidden) {
-		quad = {120, 240, 60, 60};
-	}
 	if (exploded) quad = quadOverride;
-	DrawTexturePro(tileMapTexture, quad, l, {0, 0}, 0, WHITE);
+	drawQuad(quad, l);
+	if (mine && !hidden && !exploded) drawQuad(specialSpriteMap.at(MINE), l);
+	if (flagged) drawQuad(specialSpriteMap.at(FLAG), l);
+
 	DrawRectangleLinesEx(l, 1.0f, Fade(BLACK, 0.2));
-	if (flagged) {
-		DrawCircle(x * tileSize + tileSize/2, y * tileSize + tileSize/2, 4, RED);
-	};
 	if (hidden) return;
 	if (adjacentMines > 0 && !mine) {
 		const char *n = TextFormat("%i", adjacentMines);
@@ -102,7 +113,7 @@ void Cell::dig() {
 	hidden = false;
 	if (!mine) return;
 	// spriteVal = EXPLODE;
-	quadOverride = {60, 240, 60, 60};
+	quadOverride = specialSpriteMap.at(EXPLODE);
 	exploded = true;
 	PlaySound(kaboom);
 }
@@ -146,29 +157,6 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	}
 }
 Grid::~Grid() {}
-
-void Grid::debugDig(Vector2 pos) {
-	if (!hasCellAtPixel(pos)) return;
-	Cell& cell = cellAtPixel(pos);
-	cell.hidden = false;
-	cell.setBorders(*this);
-	for (int x = cell.x - 1; x <= cell.x + 1; x += 2) {
-		if (!isValid(x, cell.y)) continue;
-		getCell(x, cell.y).setBorders(*this);
-	}
-	for (int y = cell.y - 1; y <= cell.y + 1; y += 2) {
-		if (!isValid(cell.x, y)) continue;
-		getCell(cell.x, y).setBorders(*this);
-	}
-}
-void Grid::debugSetAllBorders() {
-	for (int x = 0; x < gWidth; x++) {
-		for (int y = 0; y < gHeight; y++)
-		{
-			getCell(x, y).setBorders(*this);
-		}
-	}
-}
 
 void Grid::setBordersAround(Cell& cell) {
 	for (int x = cell.x -1; x <= cell.x + 1; x++) {
@@ -331,10 +319,6 @@ void Grid::updateExposingMines() {
 		exposeTimer = 0;
 		Cell& cell = getCell(mines.at(exposePos));
 		exposePos++;
-
-		if (cell.flagged) {
-			cell.flagged = false;
-		}
 		cell.hidden = false;
 		setBordersAround(cell);
 	}

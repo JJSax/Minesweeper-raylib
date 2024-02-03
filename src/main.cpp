@@ -33,13 +33,6 @@ int main() {
 		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
 			field.flag(GetMousePosition());
 		}
-		if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE)) {
-			field.rawDig(field.cellAtPixel(GetMousePosition()));
-		}
-		if (IsKeyPressed(KEY_R)) {
-			std::cout << "HERE" << std::endl;
-			field.debugSetAllBorders();
-		}
 
 		//update
 		field.update();

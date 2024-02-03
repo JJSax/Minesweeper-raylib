@@ -79,7 +79,7 @@ public:
 
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
-	void debugDig(Vector2 pos);
+	// void debugDig(Vector2 pos);
 
 	void dig(Cell& cell);
 	void dig(Vector2 position);
@@ -106,6 +106,6 @@ public:
 	bool stateWin();
 	bool stateLose();
 	void setBordersAround(Cell& cell);
-	void debugSetAllBorders();
+	// void debugSetAllBorders();
 
 };
