@@ -65,12 +65,13 @@ private:
 	std::vector<std::pair<int, int>> mines;
 	GAMESTATE state = GAMESTATE::GAMEOVER;
 
-	void updateClearing();
-
+	std::set<std::pair<int,int>> getNextRevealLayer(Cell& cell);
 	const float EXPOSETIMER = 0.1;
 	float exposeTimer;
 	int exposePos;
 	void updateExposingMines();
+	void updateClearing();
+
 protected:
 public:
 

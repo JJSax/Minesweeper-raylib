@@ -90,16 +90,14 @@ void Cell::render(float tileSize) {
 	if (flagged) drawQuad(specialSpriteMap.at(FLAG), l);
 
 	DrawRectangleLinesEx(l, 1.0f, Fade(BLACK, 0.2));
-	if (hidden) return;
-	if (adjacentMines > 0 && !mine) {
-		const char *n = TextFormat("%i", adjacentMines);
-		int font = 26;
-		int w = MeasureText(n, font);
-		DrawText(n,
-			l.x + tileSize / 2 - w/2, l.y + tileSize / 2 - font/2,
-			font, adjacentIndicatorColor.at(adjacentMines)
-		);
-	}
+	if (hidden || (adjacentMines == 0) || mine) return;
+	const char *n = TextFormat("%i", adjacentMines);
+	int font = 26;
+	int w = MeasureText(n, font);
+	DrawText(n,
+		l.x + tileSize / 2 - w/2, l.y + tileSize / 2 - font/2,
+		font, adjacentIndicatorColor.at(adjacentMines)
+	);
 }
 bool Cell::isMine() {return mine;}
 
@@ -117,7 +115,6 @@ void Cell::setBorders(Grid& grid) {
 void Cell::dig() {
 	hidden = false;
 	if (!mine) return;
-	// spriteVal = EXPLODE;
 	quadOverride = specialSpriteMap.at(EXPLODE);
 	exploded = true;
 	PlaySound(kaboom);
@@ -199,6 +196,7 @@ void Grid::placeMines(Cell& clicked) {
 
 void Grid::rawDig(Cell& cell) {
 	// if (!cell.hidden) throw std::runtime_error("Can't dig a tile that is already dug");
+	if (!cell.hidden) return;
 	cell.dig();
 	setBordersAround(cell);
 	if (cell.isMine()) {
@@ -207,21 +205,10 @@ void Grid::rawDig(Cell& cell) {
 	}
 	revealedCells++;
 	if (revealedCells + totalMines == gWidth * gHeight) state = GAMESTATE::WIN;
-	if (cell.adjacentMines == 0) return;
-	return;
 }
 
-void Grid::dig(Cell& cell) {
-	if (state == GAMESTATE::GAMEOVER || state == GAMESTATE::WIN) return;
-	if (cell.flagged) return;
-	if (!cell.hidden) return;
-	rawDig(cell);
-	cell.revealed = true;
-	if (cell.adjacentMines > 0) return;
-
-	std::set<std::pair<int,int>> neighbors;
-
-	//! candidate to move to it's own function,  also used later in update clearing
+std::set<std::pair<int,int>> Grid::getNextRevealLayer(Cell& cell) {
+	std::set<std::pair<int,int>> nextLayer;
 	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 			if (!isValid(x, y)) continue;
@@ -230,10 +217,20 @@ void Grid::dig(Cell& cell) {
 			if (cell.flagged) continue;
 			if (cell.revealed) continue;
 			cell.revealed = true;
-			neighbors.emplace(std::pair(x, y));
+			nextLayer.emplace(std::pair(x, y));
 		}
 	}
-	revealQueue.push(neighbors);
+	return nextLayer;
+}
+
+void Grid::dig(Cell& cell) {
+	if (state == GAMESTATE::GAMEOVER || state == GAMESTATE::WIN) return;
+	if (cell.flagged) return;
+	if (!cell.hidden) return;
+	cell.revealed = true;
+	rawDig(cell);
+	if (cell.adjacentMines > 0) return;
+	revealQueue.push(getNextRevealLayer(cell));
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
 
@@ -295,21 +292,11 @@ void Grid::updateClearing() {
 	for (const auto cPair : revealQueue.front()) {
 		Cell& cell = getCell(cPair);
 		if (!cell.flagged) {
-			rawDig(cell);
 			cell.revealed = true; // might already be true
+			rawDig(cell);
 			if (cell.adjacentMines > 0) continue;
 		}
-		for (int x = cell.x - 1; x <= cell.x + 1; x++) {
-			for (int y = cell.y - 1; y <= cell.y + 1; y++) {
-				if (!isValid(x, y)) continue;
-				Cell& cell = getCell(x, y);
-				if (!cell.hidden) continue;
-				if (cell.flagged) continue;
-				if (cell.revealed) continue;
-				cell.revealed = true;
-				nextLayer.emplace(std::pair(x, y));
-			}
-		}
+		nextLayer.merge(getNextRevealLayer(cell));
 	}
 	revealQueue.pop();
 	if (!nextLayer.empty()) revealQueue.push(nextLayer);
