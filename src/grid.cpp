@@ -45,8 +45,11 @@ void load() {
 	static const float sts = 60; // sprite tile size
 	for (int i = 0; i <= 1; i++) {
 		spriteMap.emplace(i, std::unordered_map<int, Rectangle>());
+		spriteMap.emplace(i+2, std::unordered_map<int, Rectangle>());
 		for (int j = 0; j < 16; j++) {
+			int v = i + 2;
 			spriteMap.at(i).emplace(j, Rectangle{sts * j, i*sts, sts, sts});
+			spriteMap.at(v).emplace(j, Rectangle{sts * j, v*sts, sts, sts});
 		}
 	}
 	specialSpriteMap.emplace(FLAG, Rectangle{0, 420, sts, sts});
@@ -70,6 +73,7 @@ Cell::Cell(int x, int y) : x(x), y(y) {
 	exploded = false;
 	adjacentMines = 0;
 	revealed = false;
+	variant = randInt(15);
 }
 Cell::~Cell() {}
 
@@ -81,6 +85,7 @@ void Cell::render(float tileSize) {
 	Rectangle quad = spriteMap.at(!hidden).at(spriteVal);
 	if (exploded) quad = quadOverride;
 	drawQuad(quad, l);
+	drawQuad(spriteMap.at(!hidden + 2).at(variant), l);
 	if (mine && !hidden && !exploded) drawQuad(specialSpriteMap.at(MINE), l);
 	if (flagged) drawQuad(specialSpriteMap.at(FLAG), l);
 

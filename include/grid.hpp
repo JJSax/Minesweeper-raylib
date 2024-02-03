@@ -23,6 +23,7 @@ class Cell {
 private:
 	bool exploded;
 	Rectangle quadOverride;
+	int variant;
 protected:
 public:
 	Cell(int x, int y);
