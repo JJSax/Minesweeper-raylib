@@ -26,7 +26,7 @@ int main() {
 	};
 
 	Grid field(gWidth, gHeight, tileSize, totalMines);
-	Texture2D texture = LoadTexture("assets/sprite.png");
+	Texture2D texture = LoadTexture("assets/tilemap.png");
 	load();
 	SetTargetFPS(60);
 	while (!WindowShouldClose()) {
@@ -64,7 +64,7 @@ int main() {
 		field.render();
 
 		DrawTexturePro(
-			texture, {140, 40, 40, 40},
+			texture, {71, 428, 40, 40},
 			{40, gHeight * tileSize, 40, 40},
 			{0, 0}, 0, WHITE
 		);
@@ -106,6 +106,7 @@ int main() {
 			DrawRectangle(s.x, s.y, -4, -newGameRect.height, WHITE);
 			DrawRectangle(s.x, s.y, -newGameRect.width, -4, WHITE);
 		}
+		DrawTexturePro(texture, {180, 300, 60, 60}, newGameRect, {0, 0}, 0, WHITE);
 
 
 		EndDrawing();
