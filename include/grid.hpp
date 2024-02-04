@@ -72,6 +72,7 @@ private:
 	std::set<std::pair<int,int>> getNextRevealLayer(Cell& cell);
 	void updateExposingMines();
 	void updateClearing();
+	void winGame();
 
 protected:
 public:

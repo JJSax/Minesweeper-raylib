@@ -25,6 +25,13 @@ enum SpecialQuad {
 // Texture2D spriteTex;
 Texture2D tileMapTexture;
 Sound kaboom;
+Sound flagPlace;
+Sound flagPop;
+Sound digSound;
+Sound clear;
+Sound clear2;
+Sound begin;
+Sound win;
 std::unordered_map<int, std::unordered_map<int, Rectangle>> spriteMap;
 std::unordered_map<int, Color> adjacentIndicatorColor;
 std::unordered_map<SpecialQuad, Rectangle> specialSpriteMap;
@@ -57,10 +64,22 @@ void load() {
 	specialSpriteMap.emplace(MINE, Rectangle{120, 300, sts, sts});
 
 	kaboom = LoadSound("assets/Big_Explosion_Cut_Off.mp3");
+	flagPlace = LoadSound("assets/flag.mp3");
+	flagPop = LoadSound("assets/flagPop.mp3");
+	digSound = LoadSound("assets/shovel.mp3");
+	clear = LoadSound("assets/clear.mp3");
+	clear2 = LoadSound("assets/clear(2).mp3");
+	begin = LoadSound("assets/begin.mp3");
+	win = LoadSound("assets/win.mp3");
 }
 void unload() {
 	UnloadSound(kaboom);
-	UnloadTexture(tileMapTexture);
+	UnloadSound(flagPlace);
+	UnloadSound(flagPop);
+	UnloadSound(clear);
+	UnloadSound(clear2);
+	UnloadSound(begin);
+	UnloadSound(win);
 }
 
 ////////////////////////////////////////////////////////////
@@ -163,6 +182,8 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 }
 Grid::~Grid() {}
 void Grid::reset() {
+	if (state == GAMESTATE::INIT) return;
+
 	for (int x = 0; x < gWidth; x++) {
 		for (int y = 0; y < gHeight; y++) {
 			getCell(x, y).reset();
@@ -181,6 +202,7 @@ void Grid::reset() {
 	revealQueue = {};
 	mines = {};
 	exposePos = 0;
+	PlaySound(begin);
 
 }
 
@@ -218,6 +240,11 @@ void Grid::placeMines(Cell& clicked) {
 	}
 }
 
+void Grid::winGame() {
+	state = GAMESTATE::WIN;
+	PlaySound(win);
+}
+
 void Grid::rawDig(Cell& cell) {
 	// if (!cell.hidden) throw std::runtime_error("Can't dig a tile that is already dug");
 	if (!cell.hidden) return;
@@ -228,7 +255,7 @@ void Grid::rawDig(Cell& cell) {
 		return;
 	}
 	revealedCells++;
-	if (revealedCells + totalMines == gWidth * gHeight) state = GAMESTATE::WIN;
+	if (revealedCells + totalMines == gWidth * gHeight) winGame();
 }
 
 std::set<std::pair<int,int>> Grid::getNextRevealLayer(Cell& cell) {
@@ -254,6 +281,11 @@ void Grid::dig(Cell& cell) {
 	cell.revealed = true;
 	rawDig(cell);
 	if (cell.adjacentMines > 0) return;
+	if (randInt(1) == 0) {
+		PlaySound(clear);
+	} else {
+		PlaySound(clear2);
+	}
 	revealQueue.push(getNextRevealLayer(cell));
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
@@ -279,16 +311,20 @@ int Grid::flagsAround(Cell& cell) {
 
 void Grid::handleDigAround(Cell& cell) {
 	if (cell.hidden || flagsAround(cell) != cell.adjacentMines) return;
+	bool dug = false;
 	for (int x = cell.x - 1; x <= cell.x + 1; x++) {
 		for (int y = cell.y - 1; y <= cell.y + 1; y++) {
 			if (cell.x == x && cell.y == y) continue;
 			if (!isValid(x, y)) continue;
 			Cell& c = getCell(x, y);
 			if (c.flagged) continue;
+			if (!c.hidden) continue;
 			c.revealed = true;
 			dig(c);
+			dug = true;
 		}
 	}
+	if (dug) PlaySound(digSound);
 }
 void Grid::handleDigAround(Vector2 pos) {
 	handleDigAround(cellAtPixel(pos));
@@ -299,7 +335,13 @@ void Grid::handleLeftClick(Vector2 pos) {
 	if (state == GAMESTATE::INIT) {
 		placeMines(cellAtPixel(pos));
 		state = GAMESTATE::PLAYING;
+		if (randInt(1) == 0) {
+			PlaySound(clear);
+		} else {
+			PlaySound(clear2);
+		}
 	}
+	if (cellAtPixel(pos).hidden) PlaySound(digSound);
 	dig(pos);
 }
 
@@ -383,9 +425,11 @@ void Grid::flag(Vector2 pos) {
 	if (c.flagged) {
 		flaggedCells.insert(std::make_pair(c.x, c.y));
 		totalFlags++;
+		PlaySound(flagPlace);
 	} else {
 		flaggedCells.erase(std::make_pair(c.x, c.y));
 		totalFlags--;
+		PlaySound(flagPop);
 	}
 
 	if (totalFlags != totalMines) return;
@@ -397,7 +441,7 @@ void Grid::flag(Vector2 pos) {
 			break;
 		}
 	}
-	if (win) state = GAMESTATE::WIN;
+	if (win) winGame();
 }
 
 int Grid::getTotalFlags() {return totalFlags;}
