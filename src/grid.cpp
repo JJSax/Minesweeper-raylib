@@ -46,7 +46,7 @@ void load() {
 		{7, PURPLE},
 		{8, BLACK}
 	};
-	tileMapTexture = LoadTexture("assets/tilemap.png");
+
 	static const float sts = 60; // sprite tile size
 	for (int i = 0; i <= 1; i++) {
 		int v = i + 2;
@@ -61,6 +61,7 @@ void load() {
 	specialSpriteMap.emplace(EXPLODE, Rectangle{60, 300, sts, sts});
 	specialSpriteMap.emplace(MINE, Rectangle{120, 300, sts, sts});
 
+	tileMapTexture = LoadTexture("assets/tilemap.png");
 	kaboom = LoadSound("assets/Big_Explosion_Cut_Off.mp3");
 	flagPlace = LoadSound("assets/flag.mp3");
 	flagPop = LoadSound("assets/flagPop.mp3");
@@ -105,10 +106,9 @@ void drawQuad(Rectangle quad, Rectangle at) {
 }
 void Cell::render(float tileSize) {
 	Rectangle l = {x * tileSize, y * tileSize, tileSize, tileSize};
-	Rectangle quad = spriteMap.at(!hidden).at(spriteVal);
-	if (exploded) quad = quadOverride;
-	drawQuad(quad, l);
+	drawQuad(spriteMap.at(!hidden).at(spriteVal), l);
 	drawQuad(spriteMap.at(!hidden + 2).at(variant), l);
+	if (exploded) drawQuad(specialSpriteMap.at(EXPLODE), l);
 	if (mine && !hidden && !exploded) drawQuad(specialSpriteMap.at(MINE), l);
 	if (flagged) drawQuad(specialSpriteMap.at(FLAG), l);
 
