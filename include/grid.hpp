@@ -6,7 +6,6 @@
 #include <random>
 #include <set>
 #include <unordered_set>
-// #include <memory>
 
 class Grid;
 void load();
@@ -24,6 +23,7 @@ private:
 	bool exploded;
 	Rectangle quadOverride;
 	int variant;
+	int spriteVal;
 protected:
 public:
 	Cell(int x, int y);
@@ -31,20 +31,21 @@ public:
 	void reset();
 	bool operator==(const Cell& other);
 
-	short int adjacentMines;
 	const int x;
 	const int y;
+	short int adjacentMines;
+	bool mine;
 	bool hidden;
 	bool revealed; // if not hidden or is in the revealQueue
-	bool mine;
-	int spriteVal;
 	bool flagged;
 	void render(float tileSize);
 	bool isMine();
 	void dig();
 
-	/// @brief Toggle the cell's flag
-	/// @return false if not revealed, true if revealed.
+	/**
+	* @brief Toggle the cell's flag
+	* @return If state changed
+	*/
 	bool toggleFlagged();
 	void setBorders(Grid& grid);
 };
@@ -57,59 +58,56 @@ private:
 	int totalMines;
 	std::vector<std::vector<Cell>> tiles;
 
-	const float REVEALTIMER = 0.05f;
+	const float REVEALTIMER = 0.05f; // Revealing blanks
 	float revealTimer = REVEALTIMER;
 	int revealedCells;
 	short int totalFlags;
-	std::set<std::pair<int, int>> flaggedCells;
+	std::unordered_set<int> flaggedCells; // hashed cell x/y
 	std::queue<std::set<std::pair<int,int>>> revealQueue;
 	std::vector<std::pair<int, int>> mines;
 	GAMESTATE state = GAMESTATE::GAMEOVER;
 
-	const float EXPOSETIMER = 0.1;
+	const float EXPOSETIMER = 0.1; // Exposing mines
 	float exposeTimer;
 	int exposePos;
 	std::set<std::pair<int,int>> getNextRevealLayer(Cell& cell);
 	void updateExposingMines();
 	void updateClearing();
 	void winGame();
-
-protected:
-public:
+	int hash(int x, int y);
+	Cell& unhash(int hash);
+	void placeMines(Cell& clicked);
 
 	/// @brief Digs cell if state is playing and the cell is hidden.
 	/// @param cell The cell object to dig.
 	void rawDig(Cell& cell);
+	void dig(Cell& cell);
+	void dig(Vector2 position);
 
+	bool hasCellAtPixel(Vector2 pos);
+	Cell& cellAtPixel(Vector2 pos);
+	Cell& randomCell();
+	int flagsAround(Cell& cell);
+	void setBordersAround(Cell& cell);
+protected:
+public:
 	Grid(int gWidth, int gHeight, float tileSize, int totalMines);
 	~Grid();
 	void reset();
-	// void debugDig(Vector2 pos);
-
-	void dig(Cell& cell);
-	void dig(Vector2 position);
 
 	Cell& getCell(int x, int y);
 	Cell& getCell(std::pair<int, int>);
 	bool isValid(int x, int y);
-	int flagsAround(Cell& cell);
+
 	void handleDigAround(Cell& cell);
 	void handleDigAround(Vector2 pos);
 	void handleLeftClick(Vector2 pos);
 	void update();
 	void render();
 
-	bool hasCellAtPixel(Vector2 pos);
-	Cell& cellAtPixel(Vector2 pos);
-	Cell& randomCell();
-
 	void flag(Vector2 position);
-	void placeMines(Cell& clicked);
-
 	int getTotalFlags();
+
 	bool stateWin();
 	bool stateLose();
-	void setBordersAround(Cell& cell);
-	// void debugSetAllBorders();
-
 };

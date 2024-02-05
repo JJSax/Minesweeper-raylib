@@ -22,7 +22,6 @@ enum SpecialQuad {
 };
 
 
-// Texture2D spriteTex;
 Texture2D tileMapTexture;
 Sound kaboom;
 Sound flagPlace;
@@ -38,7 +37,6 @@ std::unordered_map<SpecialQuad, Rectangle> specialSpriteMap;
 
 void load() {
 	adjacentIndicatorColor = {
-		{0, Fade(WHITE, 0)},
 		{1, BLUE},
 		{2, GREEN},
 		{3, YELLOW},
@@ -81,6 +79,7 @@ void unload() {
 	UnloadSound(begin);
 	UnloadSound(win);
 }
+
 
 ////////////////////////////////////////////////////////////
 
@@ -181,6 +180,9 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	}
 }
 Grid::~Grid() {}
+int Grid::hash(int x, int y) { return x * 14 + y; }
+Cell& Grid::unhash(int hash) { return getCell(hash/14, hash % 14); };
+
 void Grid::reset() {
 	if (state == GAMESTATE::INIT) return;
 
@@ -203,7 +205,6 @@ void Grid::reset() {
 	mines = {};
 	exposePos = 0;
 	PlaySound(begin);
-
 }
 
 void Grid::setBordersAround(Cell& cell) {
@@ -245,6 +246,10 @@ void Grid::winGame() {
 	PlaySound(win);
 }
 
+void playClearSound() {
+	PlaySound(randInt(1) ? clear : clear2);
+}
+
 void Grid::rawDig(Cell& cell) {
 	// if (!cell.hidden) throw std::runtime_error("Can't dig a tile that is already dug");
 	if (!cell.hidden) return;
@@ -280,22 +285,20 @@ void Grid::dig(Cell& cell) {
 	if (!cell.hidden) return;
 	cell.revealed = true;
 	rawDig(cell);
-	if (cell.adjacentMines > 0) return;
-	if (randInt(1) == 0) {
-		PlaySound(clear);
-	} else {
-		PlaySound(clear2);
-	}
+	if (cell.adjacentMines > 0 && !cell.isMine()) return;
+	playClearSound();
 	revealQueue.push(getNextRevealLayer(cell));
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
 
 bool Grid::isValid(int x, int y) {
-	return 0 <= x && x < tiles.size() && 0 <= y && y < tiles[x].size();
+	return 0 <= x && x < gWidth && 0 <= y && y < gHeight;
 }
-
+bool Grid::hasCellAtPixel(Vector2 pos) { return pos.y < gHeight * tileSize; }
 Cell& Grid::getCell(int x, int y) { return tiles.at(x).at(y); }
 Cell& Grid::getCell(std::pair<int, int> pos) {return getCell(pos.first, pos.second);}
+Cell& Grid::cellAtPixel(Vector2 pos) { return getCell(pos.x / tileSize, pos.y / tileSize); }
+Cell& Grid::randomCell() { return getCell(randInt(gWidth - 1), randInt(gHeight - 1)); }
 
 int Grid::flagsAround(Cell& cell) {
 	int t = 0;
@@ -335,13 +338,9 @@ void Grid::handleLeftClick(Vector2 pos) {
 	if (state == GAMESTATE::INIT) {
 		placeMines(cellAtPixel(pos));
 		state = GAMESTATE::PLAYING;
-		if (randInt(1) == 0) {
-			PlaySound(clear);
-		} else {
-			PlaySound(clear2);
-		}
+		// playClearSound();
 	}
-	if (cellAtPixel(pos).hidden) PlaySound(digSound);
+	if (cellAtPixel(pos).hidden && state == GAMESTATE::PLAYING) PlaySound(digSound);
 	dig(pos);
 }
 
@@ -404,18 +403,6 @@ void Grid::render() {
 	}
 }
 
-bool Grid::hasCellAtPixel(Vector2 pos) {
-	return pos.y < gHeight * tileSize;
-}
-
-Cell& Grid::cellAtPixel(Vector2 pos) {
-	return tiles.at(pos.x / tileSize).at(pos.y / tileSize);
-}
-
-Cell& Grid::randomCell() {
-	return tiles.at(randInt(gWidth - 1)).at(randInt(gHeight - 1));
-}
-
 void Grid::flag(Vector2 pos) {
 	if (state != GAMESTATE::PLAYING) return;
 	if (!hasCellAtPixel(pos)) return;
@@ -423,11 +410,11 @@ void Grid::flag(Vector2 pos) {
 	if (!c.toggleFlagged()) return;
 
 	if (c.flagged) {
-		flaggedCells.insert(std::make_pair(c.x, c.y));
+		flaggedCells.insert(hash(c.x, c.y));
 		totalFlags++;
 		PlaySound(flagPlace);
 	} else {
-		flaggedCells.erase(std::make_pair(c.x, c.y));
+		flaggedCells.erase(hash(c.x, c.y));
 		totalFlags--;
 		PlaySound(flagPop);
 	}
