@@ -71,6 +71,7 @@ void load() {
 	win = LoadSound("assets/win.mp3");
 }
 void unload() {
+	UnloadTexture(tileMapTexture);
 	UnloadSound(kaboom);
 	UnloadSound(flagPlace);
 	UnloadSound(flagPop);
