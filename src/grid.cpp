@@ -49,10 +49,10 @@ void load() {
 	tileMapTexture = LoadTexture("assets/tilemap.png");
 	static const float sts = 60; // sprite tile size
 	for (int i = 0; i <= 1; i++) {
+		int v = i + 2;
 		spriteMap.emplace(i, std::unordered_map<int, Rectangle>());
-		spriteMap.emplace(i+2, std::unordered_map<int, Rectangle>());
+		spriteMap.emplace(v, std::unordered_map<int, Rectangle>());
 		for (int j = 0; j < 16; j++) {
-			int v = i + 2;
 			spriteMap.at(i).emplace(j, Rectangle{sts * j, i*sts, sts, sts});
 			spriteMap.at(v).emplace(j, Rectangle{sts * j, v*sts, sts, sts});
 		}
@@ -246,7 +246,6 @@ void Grid::winGame() {
 	PlaySound(win);
 }
 
-
 void Grid::rawDig(Cell& cell) {
 	// if (!cell.hidden) throw std::runtime_error("Can't dig a tile that is already dug");
 	if (!cell.hidden) return;
@@ -282,15 +281,13 @@ void Grid::dig(Cell& cell) {
 	if (!cell.hidden) return;
 	cell.revealed = true;
 	rawDig(cell);
-	if (cell.adjacentMines > 0 && !cell.isMine()) return;
+	if (cell.adjacentMines > 0 || cell.isMine()) return;
 	PlaySound(randInt(1) ? clear : clear2);
 	revealQueue.push(getNextRevealLayer(cell));
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
 
-bool Grid::isValid(int x, int y) {
-	return 0 <= x && x < gWidth && 0 <= y && y < gHeight;
-}
+bool Grid::isValid(int x, int y) { return 0 <= x && x < gWidth && 0 <= y && y < gHeight; }
 bool Grid::hasCellAtPixel(Vector2 pos) { return pos.y < gHeight * tileSize; }
 Cell& Grid::getCell(int x, int y) { return tiles.at(x).at(y); }
 Cell& Grid::getCell(std::pair<int, int> pos) {return getCell(pos.first, pos.second);}
