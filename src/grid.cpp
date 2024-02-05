@@ -246,9 +246,6 @@ void Grid::winGame() {
 	PlaySound(win);
 }
 
-void playClearSound() {
-	PlaySound(randInt(1) ? clear : clear2);
-}
 
 void Grid::rawDig(Cell& cell) {
 	// if (!cell.hidden) throw std::runtime_error("Can't dig a tile that is already dug");
@@ -286,7 +283,7 @@ void Grid::dig(Cell& cell) {
 	cell.revealed = true;
 	rawDig(cell);
 	if (cell.adjacentMines > 0 && !cell.isMine()) return;
-	playClearSound();
+	PlaySound(randInt(1) ? clear : clear2);
 	revealQueue.push(getNextRevealLayer(cell));
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
@@ -338,7 +335,6 @@ void Grid::handleLeftClick(Vector2 pos) {
 	if (state == GAMESTATE::INIT) {
 		placeMines(cellAtPixel(pos));
 		state = GAMESTATE::PLAYING;
-		// playClearSound();
 	}
 	if (cellAtPixel(pos).hidden && state == GAMESTATE::PLAYING) PlaySound(digSound);
 	dig(pos);
@@ -419,16 +415,18 @@ void Grid::flag(Vector2 pos) {
 		PlaySound(flagPop);
 	}
 
-	if (totalFlags != totalMines) return;
-	// check if all the flags are on mines
-	bool win = true;
-	for (auto c : flaggedCells) {
-		if (!getCell(c.first, c.second).isMine()) {
-			win = false;
-			break;
-		}
-	}
-	if (win) winGame();
+	//* the following code is for allowing victory by correct flag placements
+	//* this took out challenge at the ends of playthoughs.
+	// if (totalFlags != totalMines) return;
+	// // check if all the flags are on mines
+	// bool win = true;
+	// for (auto c : flaggedCells) {
+	// 	if (!unhash(c).isMine()) {
+	// 		win = false;
+	// 		break;
+	// 	}
+	// }
+	// if (win) winGame();
 }
 
 int Grid::getTotalFlags() {return totalFlags;}
