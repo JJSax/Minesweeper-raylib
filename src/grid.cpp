@@ -140,7 +140,6 @@ void Cell::dig() {
 	if (!mine) return;
 	quadOverride = specialSpriteMap.at(EXPLODE);
 	exploded = true;
-	PlaySound(kaboom);
 }
 
 bool Cell::toggleFlagged() {
@@ -166,6 +165,7 @@ Grid::Grid(int gWidth, int gHeight, float tileSize, int totalMines)  {
 	this->revealedCells = 0;
 	this->exposeTimer = 0;
 	this->exposePos = 0;
+	this->soundsOn = true;
 
 	for (int x = 0; x < gWidth; x++) {
 		tiles.emplace_back();
@@ -205,7 +205,7 @@ void Grid::reset() {
 	revealQueue = {};
 	mines = {};
 	exposePos = 0;
-	PlaySound(begin);
+	playSound(begin);
 }
 
 void Grid::setBordersAround(Cell& cell) {
@@ -242,9 +242,16 @@ void Grid::placeMines(Cell& clicked) {
 	}
 }
 
+
+void Grid::playSound(Sound sound) {
+	if (!soundsOn) return;
+	PlaySound(sound);
+}
+void Grid::toggleSounds() { soundsOn = !soundsOn; }
+
 void Grid::winGame() {
 	state = GAMESTATE::WIN;
-	PlaySound(win);
+	playSound(win);
 }
 
 void Grid::rawDig(Cell& cell) {
@@ -254,6 +261,7 @@ void Grid::rawDig(Cell& cell) {
 	setBordersAround(cell);
 	if (cell.isMine()) {
 		state = GAMESTATE::GAMEOVER;
+		playSound(kaboom);
 		return;
 	}
 	revealedCells++;
@@ -283,7 +291,7 @@ void Grid::dig(Cell& cell) {
 	cell.revealed = true;
 	rawDig(cell);
 	if (cell.adjacentMines > 0 || cell.isMine()) return;
-	PlaySound(randInt(1) ? clear : clear2);
+	playSound(randInt(1) ? clear : clear2);
 	revealQueue.push(getNextRevealLayer(cell));
 }
 void Grid::dig(Vector2 pos) {dig(cellAtPixel(pos));}
@@ -322,7 +330,7 @@ void Grid::handleDigAround(Cell& cell) {
 			dug = true;
 		}
 	}
-	if (dug) PlaySound(digSound);
+	if (dug) playSound(digSound);
 }
 void Grid::handleDigAround(Vector2 pos) {
 	handleDigAround(cellAtPixel(pos));
@@ -334,7 +342,7 @@ void Grid::handleLeftClick(Vector2 pos) {
 		placeMines(cellAtPixel(pos));
 		state = GAMESTATE::PLAYING;
 	}
-	if (cellAtPixel(pos).hidden && state == GAMESTATE::PLAYING) PlaySound(digSound);
+	if (cellAtPixel(pos).hidden && state == GAMESTATE::PLAYING) playSound(digSound);
 	dig(pos);
 }
 
@@ -406,11 +414,11 @@ void Grid::flag(Vector2 pos) {
 	if (c.flagged) {
 		flaggedCells.insert(hash(c.x, c.y));
 		totalFlags++;
-		PlaySound(flagPlace);
+		playSound(flagPlace);
 	} else {
 		flaggedCells.erase(hash(c.x, c.y));
 		totalFlags--;
-		PlaySound(flagPop);
+		playSound(flagPop);
 	}
 
 	//* the following code is for allowing victory by correct flag placements

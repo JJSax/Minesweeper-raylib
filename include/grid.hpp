@@ -57,6 +57,7 @@ private:
 	float tileSize;
 	int totalMines;
 	std::vector<std::vector<Cell>> tiles;
+	bool soundsOn;
 
 	const float REVEALTIMER = 0.05f; // Revealing blanks
 	float revealTimer = REVEALTIMER;
@@ -78,6 +79,7 @@ private:
 	Cell& unhash(int hash);
 	void placeMines(Cell& clicked);
 
+	void playSound(Sound sound);
 	/// @brief Digs cell if state is playing and the cell is hidden.
 	/// @param cell The cell object to dig.
 	void rawDig(Cell& cell);
@@ -104,10 +106,12 @@ public:
 	void handleLeftClick(Vector2 pos);
 	void update();
 	void render();
+	void toggleSounds();
 
 	void flag(Vector2 position);
 	int getTotalFlags();
 
 	bool stateWin();
 	bool stateLose();
+
 };

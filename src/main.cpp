@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include <string>
 #include <iostream>
+#include <unordered_map>
 
 #include "grid.hpp"
 
@@ -12,6 +13,7 @@ int main() {
 	const int gHeight = 14;
 	const int footHeight = 50;
 	const int totalMines = 40;
+	bool playSounds = true;
 
 	const Vector2 fieldSize = {gWidth * tileSize, gHeight * tileSize};
 
@@ -24,9 +26,23 @@ int main() {
 		fieldSize.x - 10 - newDimension, fieldSize.y + 5,
 		newDimension, newDimension
 	};
+	Rectangle soundsRect = {
+		newGameRect.x - newDimension - 10, newGameRect.y,
+		newDimension, newDimension
+	};
+
+	Texture2D texture = LoadTexture("assets/tilemap.png");
+	enum QUAD {
+		NEWGAME,
+		SOUNDS,
+		MUTESOUNDS
+	};
+	std::unordered_map<QUAD, Rectangle> qmap;
+	qmap[NEWGAME] = {180, 300, 60, 60};
+	qmap[SOUNDS] = {240, 300, 60, 60};
+	qmap[MUTESOUNDS] = {300, 300, 60, 60};
 
 	Grid field(gWidth, gHeight, tileSize, totalMines);
-	Texture2D texture = LoadTexture("assets/tilemap.png");
 	load();
 	SetTargetFPS(60);
 	while (!WindowShouldClose()) {
@@ -52,6 +68,11 @@ int main() {
 				field.reset();
 			}
 			newGamePressed = false;
+
+			if (CheckCollisionPointRec(GetMousePosition(), soundsRect)) {
+				playSounds = !playSounds;
+				field.toggleSounds();
+			}
 		}
 
 		//update
@@ -106,8 +127,11 @@ int main() {
 			DrawRectangle(s.x, s.y, -4, -newGameRect.height, WHITE);
 			DrawRectangle(s.x, s.y, -newGameRect.width, -4, WHITE);
 		}
-		DrawTexturePro(texture, {180, 300, 60, 60}, newGameRect, {0, 0}, 0, WHITE);
-
+		DrawTexturePro(texture, qmap.at(NEWGAME), newGameRect, {0, 0}, 0, WHITE);
+		DrawTexturePro(texture,
+			qmap.at(playSounds ? SOUNDS : MUTESOUNDS),
+			soundsRect, {0,0}, 0, WHITE
+		);
 
 		EndDrawing();
 	}
